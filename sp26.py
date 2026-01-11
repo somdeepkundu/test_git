@@ -10,73 +10,95 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CUSTOM CSS FOR AESTHETICS ---
-# This injects custom styling to make metrics and headers look premium
+# --- AESTHETICS: GOLDEN RATIO & GLASSMORPHISM ---
 st.markdown("""
     <style>
-    /* Main container padding */
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-    }
+    /* 1. TYPOGRAPHY SCALE (GOLDEN RATIO 1.618)
+       Base: 1rem
+       Lvl 1: 1.618rem (Subheaders)
+       Lvl 2: 2.618rem (Metrics)
+       Lvl 3: 4.236rem (Main Title)
+    */
     
-    /* Styled Metric Cards */
-    div[data-testid="stMetric"] {
-        background-color: #262730; /* Dark card background */
-        border: 1px solid #41444e;
-        padding: 15px 25px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        transition: transform 0.2s;
-    }
-    div[data-testid="stMetric"]:hover {
-        transform: scale(1.02);
-        border-color: #FF7043; /* Orange glow on hover */
-    }
-    
-    /* Metric Value Text Size */
-    [data-testid="stMetricValue"] {
-        font-size: 2rem !important;
-        font-weight: 700;
-        font-family: 'Source Sans Pro', sans-serif;
-    }
-    
-    /* Custom Title Gradient */
-    .gradient-text {
-        font-weight: bold;
-        background: -webkit-linear-gradient(left, #FF7043, #ffb74d);
+    /* Main Title */
+    .main-title {
+        font-size: 4.236rem; 
+        font-weight: 800;
+        letter-spacing: -2px;
+        background: -webkit-linear-gradient(0deg, #FF7043, #FFCA28);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-size: 3rem;
-        margin-bottom: 0px;
+        padding-bottom: 20px; /* Fibonacci 21px approx */
+    }
+
+    /* 2. SEMI-TRANSPARENT COLORFUL BLOCKS (KPI CARDS) */
+    div[data-testid="stMetric"] {
+        border-radius: 13px; /* Fibonacci 13 */
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 21px; /* Fibonacci 21 */
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
     }
     
-    /* Sanskrit Sloka Styling */
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-5px);
+    }
+
+    /* Card 1: Historical (Teal/Blue Glass) */
+    div[data-testid="column"]:nth-of-type(1) div[data-testid="stMetric"] {
+        background: linear-gradient(135deg, rgba(45, 212, 191, 0.15), rgba(45, 212, 191, 0.05));
+        border-left: 5px solid rgba(45, 212, 191, 0.5);
+    }
+
+    /* Card 2: Previous (Violet/Purple Glass) */
+    div[data-testid="column"]:nth-of-type(2) div[data-testid="stMetric"] {
+        background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(167, 139, 250, 0.05));
+        border-left: 5px solid rgba(167, 139, 250, 0.5);
+    }
+
+    /* Card 3: Current (Orange/Gold Glass) */
+    div[data-testid="column"]:nth-of-type(3) div[data-testid="stMetric"] {
+        background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(251, 146, 60, 0.05));
+        border-left: 5px solid rgba(251, 146, 60, 0.5);
+    }
+
+    /* Metric Values (Golden Ratio Lvl 2) */
+    [data-testid="stMetricValue"] {
+        font-size: 2.618rem !important;
+        font-weight: 700;
+        font-family: 'Source Sans Pro', sans-serif;
+        color: #fff;
+    }
+
+    /* Metric Labels */
+    [data-testid="stMetricLabel"] {
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        opacity: 0.8;
+    }
+
+    /* 3. SLOKA STYLING (Smaller & Elegant) */
     .sloka {
         font-family: 'Georgia', serif;
+        font-size: 0.85rem; /* Smaller size */
         font-style: italic;
         text-align: center;
-        color: #B0BEC5;
+        color: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.03);
+        padding: 13px; /* Fibonacci */
+        border-radius: 8px; /* Fibonacci */
+        margin-bottom: 34px; /* Fibonacci */
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        line-height: 1.618; /* Golden Ratio Line Height */
+    }
+
+    /* Sidebar Input Styling */
+    .stNumberInput input {
         background-color: rgba(255,255,255,0.05);
-        padding: 15px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        border-left: 3px solid #FF7043;
     }
     
-    /* Footer Styling */
-    .footer {
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        width: 100%;
-        background-color: transparent;
-        color: #888;
-        text-align: right;
-        padding: 10px 30px;
-        font-size: 0.8rem;
-        z-index: 100;
-    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -105,7 +127,7 @@ historical_data = {
 
 hostel_list = list(historical_data.keys())
 
-# --- ROBUST STATE MANAGEMENT ---
+# --- STATE MANAGEMENT ---
 if 'collections_2026' not in st.session_state:
     st.session_state['collections_2026'] = {h: 0 for h in hostel_list}
 else:
@@ -113,9 +135,9 @@ else:
         if h not in st.session_state['collections_2026']:
             st.session_state['collections_2026'][h] = 0
 
-# --- 2. SIDEBAR - DATA ENTRY ---
+# --- 2. SIDEBAR ---
 with st.sidebar:
-    # Aesthetic Sloka Display
+    # Sloka (Styled with CSS class .sloka)
     st.markdown("""
         <div class="sloka">
             সরস্বতী মহাভাগে বিদ্যে কমললোচনে।<br>
@@ -124,16 +146,16 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.header("📝 Data Entry")
-    st.caption("Update **2026 Collection** below.")
-    
-    search_query = st.text_input("🔍 Search Hostel", placeholder="Type H1, H12...").upper()
+    search_query = st.text_input("🔍 Search Hostel", placeholder="Type H1...").upper()
     
     st.markdown("---")
     
+    # Input Container
     with st.container(height=500, border=False):
         for hostel in hostel_list:
             if search_query in hostel.upper() or search_query == "":
-                # Cleaner layout for inputs
+                
+                # Input Field
                 val = st.number_input(
                     f"{hostel}",
                     min_value=0,
@@ -141,17 +163,14 @@ with st.sidebar:
                     step=500,
                     key=f"input_{hostel}"
                 )
-                
                 st.session_state['collections_2026'][hostel] = val
                 
-                # Subtle history text
-                prev_val = historical_data[hostel]['2025']
-                if prev_val > 0:
-                    st.markdown(f"<div style='text-align: right; color: #666; font-size: 0.8em; margin-top: -10px; margin-bottom: 10px;'>Previous: ₹{prev_val:,}</div>", unsafe_allow_html=True)
-                else:
-                    st.markdown(f"<div style='text-align: right; color: #666; font-size: 0.8em; margin-top: -10px; margin-bottom: 10px;'>No history</div>", unsafe_allow_html=True)
+                # Minimal History Text
+                prev = historical_data[hostel]['2025']
+                hist_text = f"Prev: ₹{prev:,}" if prev > 0 else "New"
+                st.markdown(f"<div style='text-align: right; font-size: 0.75rem; color: #888; margin-top: -8px; margin-bottom: 13px;'>{hist_text}</div>", unsafe_allow_html=True)
 
-# --- 3. PREPARE DATAFRAME ---
+# --- 3. DATAFRAME PREP ---
 rows = []
 for h in hostel_list:
     rows.append({
@@ -162,96 +181,80 @@ for h in hostel_list:
     })
 df = pd.DataFrame(rows)
 
-# --- 4. MAIN DASHBOARD UI ---
+# --- 4. MAIN DASHBOARD ---
 
-# Custom Header
-col_head_1, col_head_2 = st.columns([4, 1])
-with col_head_1:
-    st.markdown('<h1 class="gradient-text">Saraswati Puja 2026</h1>', unsafe_allow_html=True)
-    st.caption(f"IIT Bombay | Live Dashboard | {pd.Timestamp.now().strftime('%d %B %Y')}")
-with col_head_2:
+# Title Section with Gradient Class
+col_h1, col_h2 = st.columns([5, 2])
+with col_h1:
+    st.markdown('<div class="main-title">Saraswati Puja 2026</div>', unsafe_allow_html=True)
+with col_h2:
     st.markdown("<br>", unsafe_allow_html=True)
-    st.success("● Live Updates Active")
+    st.caption(f"IIT Bombay | Live Dashboard | {pd.Timestamp.now().strftime('%d %B %Y')}")
+    st.success("● Live System Active")
 
-st.markdown("---")
-
-# --- KPI Section (Now styled by CSS) ---
+# --- KPI CARDS (Semi-Transparent Blocks) ---
 total_24 = df['2024'].sum()
 total_25 = df['2025'].sum()
 total_26 = df['2026 (Live)'].sum()
 growth = ((total_26 - total_25) / total_25) * 100 if total_25 > 0 else 0
 
-kpi1, kpi2, kpi3 = st.columns(3)
+k1, k2, k3 = st.columns(3)
 
-# Note: The CSS above automatically targets these st.metric calls
-with kpi1:
-    st.metric(label="HISTORICAL (2024)", value=f"₹{total_24:,.0f}", delta=None)
-with kpi2:
-    st.metric(label="LAST YEAR (2025)", value=f"₹{total_25:,.0f}", delta=None)
-with kpi3:
-    st.metric(
-        label="CURRENT COLLECTION (2026)", 
-        value=f"₹{total_26:,.0f}", 
-        delta=f"{growth:.1f}% vs 2025"
-    )
+with k1:
+    st.metric("HISTORICAL (2024)", f"₹{total_24:,.0f}")
+with k2:
+    st.metric("PREVIOUS (2025)", f"₹{total_25:,.0f}")
+with k3:
+    st.metric("CURRENT (2026)", f"₹{total_26:,.0f}", f"{growth:.1f}% vs 2025")
 
-st.markdown("<br>", unsafe_allow_html=True) # Spacer
+st.markdown("<br>", unsafe_allow_html=True)
 
-# --- Interactive Chart (Polished) ---
-st.subheader("📊 Collection Trends")
+# --- CHART ---
+st.markdown("### 📊 Collection Trends")
 
 fig = go.Figure()
 
-# 2024: Subtle Background
+# 2024 (Background, Context)
 fig.add_trace(go.Bar(
     x=df['Hostel'], y=df['2024'], name='2024',
-    marker_color='#546E7A', # Blue Grey 600
-    opacity=0.4,
-    hovertemplate='<b>%{x}</b><br>2024: ₹%{y:,}<extra></extra>'
+    marker_color='#455A64', # Blue Grey
+    opacity=0.3
 ))
 
-# 2025: Cool Tone
+# 2025 (Reference)
 fig.add_trace(go.Bar(
     x=df['Hostel'], y=df['2025'], name='2025',
-    marker_color='#7986CB', # Indigo 300
-    opacity=0.8,
-    hovertemplate='<b>%{x}</b><br>2025: ₹%{y:,}<extra></extra>'
+    marker_color='#7E57C2', # Deep Purple
+    opacity=0.6
 ))
 
-# 2026: Vibrant Hero Color
+# 2026 (Focus - Golden/Orange)
 fig.add_trace(go.Bar(
     x=df['Hostel'], y=df['2026 (Live)'], name='2026',
-    marker_color='#FF7043', # Deep Orange 400
+    marker_color='#FF8F00', # Amber 800
     text=df['2026 (Live)'].apply(lambda x: f"₹{x/1000:.1f}k" if x > 0 else ""),
-    textposition='outside',
-    hovertemplate='<b>%{x}</b><br>2026: ₹%{y:,}<extra></extra>'
+    textposition='outside'
 ))
 
 fig.update_layout(
     barmode='group',
-    height=500,
-    margin=dict(t=20, b=40, l=20, r=20),
+    height=550, # Fibonacci 55 * 10
+    margin=dict(t=20, b=30, l=10, r=10),
     legend=dict(
-        orientation="h", y=1.05, x=1, xanchor="right",
-        bgcolor='rgba(0,0,0,0)',
-        font=dict(size=12)
+        orientation="h", y=1.02, x=1, xanchor="right",
+        bgcolor='rgba(0,0,0,0)', font=dict(color='#ccc')
     ),
-    yaxis=dict(
-        showgrid=True, 
-        gridcolor='rgba(255, 255, 255, 0.08)', # Very subtle grid
-        gridwidth=1,
-        zeroline=False
-    ),
+    yaxis=dict(showgrid=True, gridcolor='rgba(255, 255, 255, 0.05)', zeroline=False),
     xaxis=dict(showgrid=False),
     plot_bgcolor='rgba(0,0,0,0)',
-    paper_bgcolor='rgba(0,0,0,0)', # Transparent background
-    font=dict(family="Source Sans Pro", size=14)
+    paper_bgcolor='rgba(0,0,0,0)',
+    font=dict(family="Source Sans Pro", size=13)
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
-# --- Detailed Table ---
-with st.expander("📝 View Detailed Breakdown", expanded=False):
+# --- TABLE ---
+with st.expander("📝 Detailed Breakdown", expanded=False):
     st.dataframe(
         df.set_index('Hostel'),
         use_container_width=True,
@@ -262,12 +265,11 @@ with st.expander("📝 View Detailed Breakdown", expanded=False):
         }
     )
 
-# --- FOOTER ---
 st.markdown("---")
 st.markdown(
     """
-    <div style='text-align: right; color: #888888; font-family: monospace; padding-bottom: 20px;'>
-        Made by Somdeep, with ❤️
+    <div style='text-align: right; color: #666; font-size: 0.8rem; padding: 21px;'>
+        Designed with Φ • Somdeep
     </div>
     """, 
     unsafe_allow_html=True
