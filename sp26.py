@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="Saraswati Puja '26",
+    page_title="Saraswati Pujo '26",
     page_icon="🛕",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -146,7 +146,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.header("📝 Data Entry")
-    search_query = st.text_input("🔍 Search Hostel", placeholder="Type H1...").upper()
+    search_query = st.text_input("🔍 Search Hostel", placeholder="Eg. H14...").upper()
     
     st.markdown("---")
     
@@ -269,7 +269,7 @@ st.markdown("---")
 st.markdown(
     """
     <div style='text-align: right; color: #666; font-size: 0.8rem; padding: 21px;'>
-        Designed with Φ • Somdeep
+        Designed by Somdeep with ❤️,
     </div>
     """, 
     unsafe_allow_html=True
