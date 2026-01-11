@@ -186,7 +186,7 @@ df = pd.DataFrame(rows)
 # Title Section with Gradient Class
 col_h1, col_h2 = st.columns([5, 2])
 with col_h1:
-    st.markdown('<div class="main-title">Saraswati Puja 2026</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">Saraswati Pujo 2026</div>', unsafe_allow_html=True)
 with col_h2:
     st.markdown("<br>", unsafe_allow_html=True)
     st.caption(f"IIT Bombay | Live Dashboard | {pd.Timestamp.now().strftime('%d %B %Y')}")
