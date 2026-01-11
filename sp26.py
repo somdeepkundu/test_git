@@ -10,6 +10,33 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# --- Inject Custom CSS for Polish ---
+st.markdown("""
+<style>
+    /* Reduce padding on the main content area for a tighter layout */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 0rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    /* Style for the Hindi/Bengali prayer text in sidebar */
+    .prayer-text {
+        font-size: 14px;
+        margin-bottom: 0px;
+        opacity: 0.8; /* Slightly faded for less prominence */
+    }
+    /* Adjustments for the specific KPI cards to ensure consistent height */
+    [data-testid="stMetricValue"] {
+        font-size: 2.5rem;
+    }
+    [data-testid="stMetricDelta"] {
+        font-size: 0.8rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
 # --- 1. DATA INITIALIZATION ---
 historical_data = {
     'H1':       {'2024': 10000, '2025': 10100},
@@ -46,10 +73,10 @@ else:
 
 # --- 2. SIDEBAR - DATA ENTRY ---
 with st.sidebar:
-    import streamlit as st
-    st.markdown('<p style="font-size: 14px; margin-bottom: 0px;">সরস্বতী মহাভাগে বিদ্যে কমললোচনে।</p>', unsafe_allow_html=True)
-    st.markdown('<p style="font-size: 14px;">বিশ্বরূপে বিশালাক্ষি বিদ্যাং দেহি নমোহস্তু তে।।</p>', unsafe_allow_html=True)
+    st.markdown('<p class="prayer-text">সরস্বতী মহাভাগে বিদ্যে কমললোচনে।</p>', unsafe_allow_html=True)
+    st.markdown('<p class="prayer-text">বিশ্বরূপে বিশালাক্ষি বিদ্যাং দেহি নমোহস্তু তে।।</p>', unsafe_allow_html=True)
 
+    st.markdown("---")
     
     st.header("📝 Data Entry")
     st.markdown("Update **2026 Collection** below.")
@@ -62,17 +89,18 @@ with st.sidebar:
         for hostel in hostel_list:
             if search_query in hostel.upper() or search_query == "":
                 
-                # Visual grouping
-                c1, c2 = st.columns([1, 2])
-                
+                # Use a cleaner layout in the sidebar
                 val = st.number_input(
                     f"{hostel}",
                     min_value=0,
                     value=st.session_state['collections_2026'][hostel],
                     step=500,
-                    key=f"input_{hostel}"
+                    key=f"input_{hostel}",
+                    label_visibility="collapsed" # Hide the label, use markdown below
                 )
                 
+                # Display hostel name and previous value cleanly
+                st.markdown(f"**{hostel}**")
                 st.session_state['collections_2026'][hostel] = val
                 
                 prev_val = historical_data[hostel]['2025']
@@ -97,11 +125,12 @@ df = pd.DataFrame(rows)
 # --- 4. MAIN DASHBOARD UI ---
 col_head_1, col_head_2 = st.columns([6, 1], gap="small")
 with col_head_1:
-    st.title("Saraswati Puja 2026")
-    st.caption(f"Live Dashboard | {pd.Timestamp.now().strftime('%d %b %Y')}")
+    st.title("Saraswati Puja 2026 🛕")
+    st.markdown(f"**Live Dashboard** | *{pd.Timestamp.now().strftime('%d %b %Y')}*")
 with col_head_2:
-    st.write("")
-    st.success("● Live")
+    st.write("") # Add some vertical spacing
+    st.markdown('<span style="color: green; font-weight: bold;">● Live</span>', unsafe_allow_html=True)
+
 
 st.markdown("---")
 
@@ -115,36 +144,45 @@ kpi1, kpi2, kpi3 = st.columns(3)
 
 def metric_card(col, title, value, subtext=None):
     with col:
-        with st.container(border=True):
+        # Use border=True for all cards for visual uniformity
+        with st.container(border=True): 
             st.metric(label=title, value=value, delta=subtext)
 
 metric_card(kpi1, "HISTORICAL (2024)", f"₹{total_24:,.0f}")
 metric_card(kpi2, "PREVIOUS (2025)", f"₹{total_25:,.0f}")
-metric_card(kpi3, "CURRENT (2026)", f"₹{total_26:,.0f}", f"{growth:.1f}% vs 2025")
+
+# Color the delta text automatically based on value (Streamlit does this by default)
+if growth >= 0:
+    delta_color = "normal"
+else:
+    delta_color = "inverse"
+
+kpi3.metric(label="CURRENT (2026)", value=f"₹{total_26:,.0f}", delta=f"{growth:.1f}% vs 2025", delta_color=delta_color)
+
 
 # --- Interactive Chart (Aesthetic Palette) ---
 st.markdown("### 📊 3-Year Comparison")
 
 fig = go.Figure()
 
-# 2024: Soft Grey/Blue (Background context)
+# 2024: Soft Grey/Blue (Background context) - Using a slightly richer grey
 fig.add_trace(go.Bar(
     x=df['Hostel'], y=df['2024'], name='2024',
-    marker_color='#90A4AE', # Blue Grey
-    opacity=0.6
+    marker_color='#78909C', # Richer Blue Grey
+    opacity=0.7
 ))
 
-# 2025: Cool Indigo (Recent history)
+# 2025: Cool Indigo (Recent history) - Brighter Indigo
 fig.add_trace(go.Bar(
     x=df['Hostel'], y=df['2025'], name='2025',
-    marker_color='#5C6BC0', # Indigo
-    opacity=0.8
+    marker_color='#5C6BC0', 
+    opacity=0.9
 ))
 
-# 2026: Vibrant Coral/Orange (Live & Active)
+# 2026: Vibrant Coral/Orange (Live & Active) - The accent color
 fig.add_trace(go.Bar(
     x=df['Hostel'], y=df['2026 (Live)'], name='2026',
-    marker_color='#FF7043', # Deep Coral/Orange
+    marker_color='#FF5722', # Deeper Orange
     text=df['2026 (Live)'].apply(lambda x: f"₹{x/1000:.1f}k" if x > 0 else ""),
     textposition='outside'
 ))
@@ -152,21 +190,23 @@ fig.add_trace(go.Bar(
 fig.update_layout(
     barmode='group',
     height=550,
-    margin=dict(t=30, b=30, l=20, r=20),
+    # Cleaned up margins
+    margin=dict(t=40, b=40, l=40, r=40), 
     legend=dict(
-        orientation="h", y=1.1, x=1, xanchor="right",
+        orientation="h", y=1.05, x=1, xanchor="right",
         bgcolor='rgba(0,0,0,0)'
     ),
-    yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.1)'),
-    plot_bgcolor='rgba(0,0,0,0)',
-    xaxis_title="Hostel",
-    yaxis_title="Collection (₹)"
+    # Let Streamlit handle bgcolor/plot_bgcolor when in dark mode
+    yaxis=dict(showgrid=True, gridcolor='rgba(128,128,128,0.1)', title="Collection (₹)"),
+    xaxis=dict(title="Hostel"),
+    # Add minor title padding
+    title_pad=dict(t=20)
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
 # --- Detailed Table ---
-with st.expander("View Detailed Breakdown", expanded=True):
+with st.expander("View Detailed Breakdown", expanded=False): # Set expanded=False by default for cleaner dashboard
     st.dataframe(
         df.set_index('Hostel'),
         use_container_width=True,
@@ -178,10 +218,9 @@ with st.expander("View Detailed Breakdown", expanded=True):
     )
 
 
-#st.markdown("---")
 st.markdown(
     """
-    <div style='text-align: right; color: #888888; padding: 20px;'>
+    <div style='text-align: right; color: #888888; padding-top: 20px; font-size: 0.8rem;'>
         Made by Somdeep, with ❤️
     </div>
     """, 
