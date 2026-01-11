@@ -172,7 +172,7 @@ with st.expander("View Detailed Breakdown", expanded=True):
         }
     )
 
-# --- FOOTER ---
+
 st.markdown("---")
 st.markdown(
     """
