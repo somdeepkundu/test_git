@@ -173,10 +173,10 @@ with st.expander("View Detailed Breakdown", expanded=True):
     )
 
 
-st.markdown("---")
+#st.markdown("---")
 st.markdown(
     """
-    <div style='text-align: center; color: #888888; padding: 20px;'>
+    <div style='text-align: right; color: #888888; padding: 20px;'>
         Made by Somdeep, with ❤️
     </div>
     """, 
