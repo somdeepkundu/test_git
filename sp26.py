@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="Saraswati Puja '26",
+    page_title="Saraswati Puja '26 - Hostel wise collection",
     page_icon="🛕",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -46,10 +46,12 @@ else:
 
 # --- 2. SIDEBAR - DATA ENTRY ---
 with st.sidebar:
+    st.markdown("সরস্বতী মহাভাগে বিদ্যে কমললোচনে। ")
+    st.markdown("বিশ্বরূপে বিশালাক্ষি বিদ্যাং দেহি নমোহস্তু তে।।")
     st.header("📝 Data Entry")
     st.markdown("Update **2026 Collection** below.")
     
-    search_query = st.text_input("🔍 Search Hostel", placeholder="e.g. H12").upper()
+    search_query = st.text_input("🔍 Search Hostel", placeholder="e.g. H14").upper()
     
     st.markdown("---")
     
