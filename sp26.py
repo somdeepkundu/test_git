@@ -269,7 +269,7 @@ st.markdown("---")
 st.markdown( 
     """
     <div style='text-align: right; color: #666; font-size: 0.8rem; padding: 21px;'>
-        Designed by Somdeep with ❤️,
+        Designed by Somdeep, with ❤️
     </div>
     """, 
     unsafe_allow_html=True
