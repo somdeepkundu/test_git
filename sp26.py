@@ -109,8 +109,6 @@ def load_data_from_github():
 
 # --- 2. SIDEBAR ---
 with st.sidebar:
-    # --- 2. SIDEBAR ---
-with st.sidebar:
     # LOGO: Centered, Circular, with White Background for Contrast
     st.markdown("""
         <div style="text-align: center; margin-top: 10px; margin-bottom: 20px;">
