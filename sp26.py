@@ -109,7 +109,22 @@ def load_data_from_github():
 
 # --- 2. SIDEBAR ---
 with st.sidebar:
-    st.image("https://lh3.googleusercontent.com/sitesv/AAzXCkeXhnG2uTGpo7OFv7aP46ax-_JBFyWuDOW9bp7QG5jgJ257fDG7RaYPZ0xPFLA8xSmYnIqgGJ1vK6rokJ9FzqeHqbLmYb6mNIjdKC13Zv93XsnpgfhfiWw9wAamMoUpyWu9K5E9H0wDbhv9zfKpS47VP0eAST5uydn2_XOXU6kqEUX-Trk7q8dQdyA=w16383", width=100)
+    # --- 2. SIDEBAR ---
+with st.sidebar:
+    # LOGO: Centered, Circular, with White Background for Contrast
+    st.markdown("""
+        <div style="text-align: center; margin-top: 10px; margin-bottom: 20px;">
+            <img src="https://lh3.googleusercontent.com/sitesv/AAzXCkeXhnG2uTGpo7OFv7aP46ax-_JBFyWuDOW9bp7QG5jgJ257fDG7RaYPZ0xPFLA8xSmYnIqgGJ1vK6rokJ9FzqeHqbLmYb6mNIjdKC13Zv93XsnpgfhfiWw9wAamMoUpyWu9K5E9H0wDbhv9zfKpS47VP0eAST5uydn2_XOXU6kqEUX-Trk7q8dQdyA=w16383" 
+                 style="width: 110px; 
+                        border-radius: 50%; 
+                        border: 3px solid rgba(255, 112, 67, 0.6); /* Soft Orange Border */
+                        padding: 4px; 
+                        background-color: rgba(255, 255, 255, 1); /* White Background */
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Sloka
     st.markdown("""
         <div class="sloka">
             সরস্বতী মহাভাগে বিদ্যে কমললোচনে।<br>
@@ -119,8 +134,8 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # REFRESH BUTTON (Forces immediate update)
-    if st.button("🔄 Refresh Data", type="primary"):
+    # REFRESH BUTTON
+    if st.button("🔄 Refresh Data", type="primary", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -128,7 +143,7 @@ with st.sidebar:
     last_updated_text, df = load_data_from_github()
     
     if not df.empty:
-        st.info(f"📅 **Updated:** {last_updated_text}")
+        st.success(f"📅 **Updated:** {last_updated_text}")
     else:
         st.error("Could not load data.")
         
