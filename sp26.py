@@ -229,4 +229,4 @@ else:
     st.warning("Please upload 'data.csv' to your GitHub repository to see the dashboard.")
 
 st.markdown("---")
-st.markdown("<div style='text-align: right; color: #666; font-size: 0.8rem; padding: 21px;'>Designed with ❤️, by SP'26 Committee, IIT Powai.</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: right; color: #666; font-size: 0.8rem; padding: 21px;'>Designed with ❤️, by Saraswati Puja 2026 Committee, IIT Powai.</div>", unsafe_allow_html=True)
