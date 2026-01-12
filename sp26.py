@@ -109,8 +109,7 @@ def load_data_from_github():
 
 # --- 2. SIDEBAR ---
 with st.sidebar:
-    # Add this line at the top of the sidebar block
-    st.image("https://upload.wikimedia.org/wikipedia/en/1/1d/Indian_Institute_of_Technology_Bombay_Logo.svg", width=100)
+    st.image("https://lh3.googleusercontent.com/sitesv/AAzXCkeXhnG2uTGpo7OFv7aP46ax-_JBFyWuDOW9bp7QG5jgJ257fDG7RaYPZ0xPFLA8xSmYnIqgGJ1vK6rokJ9FzqeHqbLmYb6mNIjdKC13Zv93XsnpgfhfiWw9wAamMoUpyWu9K5E9H0wDbhv9zfKpS47VP0eAST5uydn2_XOXU6kqEUX-Trk7q8dQdyA=w16383", width=100)
     st.markdown("""
         <div class="sloka">
             সরস্বতী মহাভাগে বিদ্যে কমললোচনে।<br>
