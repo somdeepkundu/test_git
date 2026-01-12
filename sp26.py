@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- AESTHETICS (Golden Ratio & Glassmorphism) ---
+# --- AESTHETICS: GOLDEN RATIO & GLASSMORPHISM ---
 st.markdown("""
     <style>
     /* 1. TYPOGRAPHY SCALE */
@@ -24,7 +24,7 @@ st.markdown("""
         padding-bottom: 20px;
     }
 
-    /* 2. KPI CARDS */
+    /* 2. KPI CARDS (Glassmorphism) */
     div[data-testid="stMetric"] {
         border-radius: 13px;
         backdrop-filter: blur(12px);
@@ -80,37 +80,32 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 1. DATA LOADING FUNCTION (CSV VERSION) ---
-@st.cache_data(ttl=600) # Cache for 10 mins
-def load_data_from_csv():
+# --- 1. DATA LOADING FUNCTION (LIVE RAW GITHUB) ---
+@st.cache_data(ttl=60) # Auto-refresh cache every 60 seconds
+def load_data_from_github():
+    # LINK TO RAW DATA
+    # If your branch is 'main', change 'master' to 'main' below
+    csv_url = "https://raw.githubusercontent.com/somdeepkundu/test_git/master/data.csv"
+    
     try:
-        # A. Read just the first row to get the Date
-        # nrows=1 reads the first line. header=None prevents it from treating it as col names.
-        meta_df = pd.read_csv('data.csv', header=None, nrows=1)
-        # The date string is in the first column of the first row
-        # We split by ':' to separate "Last Updated" from "12 Jan..." if needed, or just take the whole string.
+        # A. Read just the first row to get the Date (Metadata)
+        meta_df = pd.read_csv(csv_url, header=None, nrows=1)
         raw_text = str(meta_df.iloc[0, 0])
         update_date = raw_text.replace("Last Updated:", "").strip() if "Last Updated" in raw_text else raw_text
 
-        # B. Read the actual data (skip row 0)
-        df = pd.read_csv('data.csv', header=1)
+        # B. Read the actual data (skip row 0 which is the date)
+        df = pd.read_csv(csv_url, header=1)
         
-        # Ensure numbers are treated as numbers (replace NaN with 0)
+        # Ensure numbers are treated as numbers
         cols_to_fix = ['2024', '2025', '2026']
         for col in cols_to_fix:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
             
         return update_date, df
         
-    except FileNotFoundError:
-        st.error("⚠️ 'data.csv' not found. Please create it in your GitHub repository.")
-        return "Unknown Date", pd.DataFrame()
     except Exception as e:
-        st.error(f"⚠️ Error reading CSV: {e}")
-        return "Error", pd.DataFrame()
-
-# Load Data
-last_updated_text, df = load_data_from_csv()
+        # Return empty if failed so app doesn't crash completely
+        return f"Error: {str(e)}", pd.DataFrame()
 
 # --- 2. SIDEBAR ---
 with st.sidebar:
@@ -122,9 +117,21 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.markdown("---")
-    # Display the Date we grabbed from the CSV
-    st.info(f"📅 **Updated:** {last_updated_text}")
-    st.caption("Data is managed centrally via GitHub.")
+    
+    # REFRESH BUTTON (Forces immediate update)
+    if st.button("🔄 Refresh Data", type="primary"):
+        st.cache_data.clear()
+        st.rerun()
+
+    # Load Data
+    last_updated_text, df = load_data_from_github()
+    
+    if not df.empty:
+        st.info(f"📅 **Updated:** {last_updated_text}")
+    else:
+        st.error("Could not load data.")
+        
+    st.caption("Data source: GitHub Raw")
 
 # --- 3. MAIN DASHBOARD ---
 
@@ -203,6 +210,9 @@ if not df.empty:
                 "2026": st.column_config.NumberColumn(format="₹%d")
             }
         )
+
+else:
+    st.warning("Please upload 'data.csv' to your GitHub repository to see the dashboard.")
 
 st.markdown("---")
 st.markdown("<div style='text-align: right; color: #666; font-size: 0.8rem; padding: 21px;'>Designed by Somdeep, with ❤️</div>", unsafe_allow_html=True)
