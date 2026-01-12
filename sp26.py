@@ -7,13 +7,13 @@ st.set_page_config(
     page_title="Saraswati Pujo '26",
     page_icon="🛕",
     layout="wide",
-    initial_sidebar_state="collapsed" # Sidebar collapsed as no input needed
+    initial_sidebar_state="collapsed"
 )
 
-# --- AESTHETICS: GOLDEN RATIO & GLASSMORPHISM ---
+# --- AESTHETICS (Golden Ratio & Glassmorphism) ---
 st.markdown("""
     <style>
-    /* 1. TYPOGRAPHY SCALE (GOLDEN RATIO 1.618) */
+    /* 1. TYPOGRAPHY SCALE */
     .main-title {
         font-size: 4.236rem; 
         font-weight: 800;
@@ -24,7 +24,7 @@ st.markdown("""
         padding-bottom: 20px;
     }
 
-    /* 2. KPI CARDS (Glassmorphism) */
+    /* 2. KPI CARDS */
     div[data-testid="stMetric"] {
         border-radius: 13px;
         backdrop-filter: blur(12px);
@@ -49,7 +49,7 @@ st.markdown("""
         border-left: 5px solid rgba(251, 146, 60, 0.5);
     }
 
-    /* Metrics Text */
+    /* Metric Text */
     [data-testid="stMetricValue"] {
         font-size: 2.618rem !important;
         font-weight: 700;
@@ -80,35 +80,39 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 1. DATA LOADING FUNCTION ---
-@st.cache_data(ttl=600) # Cache data for 10 mins to save performance
-def load_data_from_excel():
+# --- 1. DATA LOADING FUNCTION (CSV VERSION) ---
+@st.cache_data(ttl=600) # Cache for 10 mins
+def load_data_from_csv():
     try:
-        # Step A: Read Row 1 to get the Date (Metadata)
-        # header=None means read row 1 as data, nrows=1 means read only the first row
-        meta_df = pd.read_excel('data.xlsx', header=None, nrows=1)
-        update_date = meta_df.iloc[0, 0] # Value in Cell A1
+        # A. Read just the first row to get the Date
+        # nrows=1 reads the first line. header=None prevents it from treating it as col names.
+        meta_df = pd.read_csv('data.csv', header=None, nrows=1)
+        # The date string is in the first column of the first row
+        # We split by ':' to separate "Last Updated" from "12 Jan..." if needed, or just take the whole string.
+        raw_text = str(meta_df.iloc[0, 0])
+        update_date = raw_text.replace("Last Updated:", "").strip() if "Last Updated" in raw_text else raw_text
 
-        # Step B: Read Row 2 onwards for actual Data
-        # header=1 means Row 2 is the header
-        df = pd.read_excel('data.xlsx', header=1)
+        # B. Read the actual data (skip row 0)
+        df = pd.read_csv('data.csv', header=1)
         
-        # Ensure numeric columns are actually numbers (fill NaN with 0)
-        df[['2024', '2025', '2026']] = df[['2024', '2025', '2026']].fillna(0)
-        
+        # Ensure numbers are treated as numbers (replace NaN with 0)
+        cols_to_fix = ['2024', '2025', '2026']
+        for col in cols_to_fix:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            
         return update_date, df
         
     except FileNotFoundError:
-        st.error("⚠️ 'data.xlsx' not found in repository. Please upload it.")
+        st.error("⚠️ 'data.csv' not found. Please create it in your GitHub repository.")
         return "Unknown Date", pd.DataFrame()
     except Exception as e:
-        st.error(f"⚠️ Error reading Excel: {e}")
+        st.error(f"⚠️ Error reading CSV: {e}")
         return "Error", pd.DataFrame()
 
 # Load Data
-last_updated_text, df = load_data_from_excel()
+last_updated_text, df = load_data_from_csv()
 
-# --- 2. SIDEBAR (Purely Aesthetic now) ---
+# --- 2. SIDEBAR ---
 with st.sidebar:
     st.markdown("""
         <div class="sloka">
@@ -118,12 +122,12 @@ with st.sidebar:
     """, unsafe_allow_html=True)
     
     st.markdown("---")
-    st.info(f"📅 **Data Source:**\n{last_updated_text}")
+    # Display the Date we grabbed from the CSV
+    st.info(f"📅 **Updated:** {last_updated_text}")
     st.caption("Data is managed centrally via GitHub.")
 
 # --- 3. MAIN DASHBOARD ---
 
-# Check if df is empty before proceeding
 if not df.empty:
     
     # Title Section
@@ -143,12 +147,9 @@ if not df.empty:
 
     k1, k2, k3 = st.columns(3)
 
-    with k1:
-        st.metric("HISTORICAL (2024)", f"₹{total_24:,.0f}")
-    with k2:
-        st.metric("PREVIOUS (2025)", f"₹{total_25:,.0f}")
-    with k3:
-        st.metric("CURRENT (2026)", f"₹{total_26:,.0f}", f"{growth:.1f}% vs 2025")
+    with k1: st.metric("HISTORICAL (2024)", f"₹{total_24:,.0f}")
+    with k2: st.metric("PREVIOUS (2025)", f"₹{total_25:,.0f}")
+    with k3: st.metric("CURRENT (2026)", f"₹{total_26:,.0f}", f"{growth:.1f}% vs 2025")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -181,10 +182,7 @@ if not df.empty:
         barmode='group',
         height=550,
         margin=dict(t=20, b=30, l=10, r=10),
-        legend=dict(
-            orientation="h", y=1.02, x=1, xanchor="right",
-            bgcolor='rgba(0,0,0,0)', font=dict(color='#ccc')
-        ),
+        legend=dict(orientation="h", y=1.02, x=1, xanchor="right", bgcolor='rgba(0,0,0,0)', font=dict(color='#ccc')),
         yaxis=dict(showgrid=True, gridcolor='rgba(255, 255, 255, 0.05)', zeroline=False, fixedrange=True),
         xaxis=dict(showgrid=False, fixedrange=True),
         plot_bgcolor='rgba(0,0,0,0)',
@@ -207,11 +205,4 @@ if not df.empty:
         )
 
 st.markdown("---")
-st.markdown( 
-    """
-    <div style='text-align: right; color: #666; font-size: 0.8rem; padding: 21px;'>
-        Designed by Somdeep, with ❤️
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
+st.markdown("<div style='text-align: right; color: #666; font-size: 0.8rem; padding: 21px;'>Designed by Somdeep, with ❤️</div>", unsafe_allow_html=True)
