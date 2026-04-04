@@ -2,7 +2,8 @@
 
 A geospatial workflow to classify and visualize global population change using raster analysis and cartographic styling in Python.
 
-![Final Output](output/population_change_equal_earth.png)
+:[Final Output]<img width="4404" height="2535" alt="population_change_equal_earth (2)" src="https://github.com/user-attachments/assets/0704ec2b-b588-43bf-87f4-54f8af005721" />
+
 
 ## Overview
 
