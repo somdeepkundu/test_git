@@ -79,6 +79,8 @@ global-population-change/
 - All data is downloaded automatically when running the notebook — no manual downloads needed.
 - For poster-quality output, set `dpi=600` in the `savefig` call.
 
+- Inspired by works of Ujaval Gandhi, [Spatial Thoughts](https://youtu.be/l1Q3gKnH5Ik?si=JC4TetFs7tHtS1nQ). 
+
 ## Author
 
 **Somdeep Kundu**
