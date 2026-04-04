@@ -30,9 +30,9 @@ This project takes **Gridded Population of the World (GPW) v4** rasters for 2010
 
 ### Google Colab (recommended)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/somdeepkundu/global-population-change/blob/main/global_population_change.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/130KXKFtH4VrtAyzrhHB4EBiDDV--gqx3?usp=sharing)
 
-### Local Setup
+### Local Setu
 
 ```bash
 git clone https://github.com/somdeepkundu/global-population-change.git
