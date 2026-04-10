@@ -1,0 +1,7 @@
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+.httr-oauth
+.DS_Store
+Thumbs.db
