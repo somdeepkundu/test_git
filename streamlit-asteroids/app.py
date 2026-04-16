@@ -347,7 +347,8 @@ _TEMPLATE = """
       <h1 class="ss-title">ABSTRACT<br>ASTEROIDS</h1>
       <p class="ss-sub">Enter your callsign</p>
       <input id="name-input" type="text" placeholder="PILOT NAME"
-             maxlength="16" autocomplete="off" spellcheck="false">
+             maxlength="16" autocomplete="off" spellcheck="false"
+             autocapitalize="characters" autocorrect="off" inputmode="text">
       <button id="launch-btn">&#9654; LAUNCH</button>
       <p class="ss-hint">WASD / Arrows &middot; Space to fire</p>
     </div>
@@ -661,39 +662,65 @@ _TEMPLATE = """
         setupMobileControls();
       }
 
+      // Now that the start screen is gone, it's safe to capture clicks for
+      // keyboard focus — previously this was eating focus from the input.
+      document.addEventListener('click', focusBodyForKeyboard);
+      document.body.focus();
+
       // Seed 3 asteroids at low speed to ease the player in
       for (let i = 0; i < 3; i++) addAsteroid();
       requestAnimationFrame(tick);
     }
 
     // ── Responsive scaling ────────────────────────────────
+    // Rescale ONLY when the viewport width changes. Mobile keyboards change
+    // the visual viewport height; rescaling on those events disrupts focus.
+    let lastScaleWidth = 0;
     function applyScale() {
       const field = document.getElementById('gamefield');
       const s = Math.min(1, (window.innerWidth - 8) / 810);
       field.style.transform = s < 1 ? `scale(${s})` : '';
-      // Collapse the dead layout space left by the shrunken element
       field.style.marginBottom = s < 1 ? `${Math.round(480 * s - 480)}px` : '';
+      lastScaleWidth = window.innerWidth;
     }
-    window.addEventListener('resize', applyScale);
+    window.addEventListener('resize', () => {
+      if (window.innerWidth !== lastScaleWidth) applyScale();
+    });
+    window.addEventListener('orientationchange', applyScale);
+
+    // Pulled out so it can be attached AFTER launch — attaching this during
+    // the start screen steals focus from the name input on every click/tap,
+    // which on PC dropped the first keystrokes and on mobile slammed the
+    // virtual keyboard shut the instant it tried to open.
+    function focusBodyForKeyboard(e) {
+      if (e.target.closest('input, textarea, button, select')) return;
+      document.body.focus();
+    }
 
     window.addEventListener('load', () => {
       applyScale();
 
-      // Pre-fill name from last session
+      const nameInput = document.getElementById('name-input');
+
+      // Pre-fill name from last session, but auto-select on focus so typing
+      // replaces it immediately — no need to manually clear the field.
       try {
         const saved = localStorage.getItem('aa-player');
-        if (saved) document.getElementById('name-input').value = saved;
+        if (saved) nameInput.value = saved;
       } catch(e) {}
+      nameInput.addEventListener('focus', () => {
+        setTimeout(() => nameInput.select(), 0);
+      });
 
       document.getElementById('launch-btn').addEventListener('click', launchGame);
-      document.getElementById('name-input').addEventListener('keydown', e => {
+      nameInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') launchGame();
       });
 
       document.body.setAttribute('tabindex', '0');
       document.addEventListener('keydown', keypressHandler);
       document.addEventListener('keyup',   keypressHandler);
-      document.addEventListener('click',   () => document.body.focus());
+      // `focusBodyForKeyboard` is wired up inside launchGame(), not here.
     });
   </script>
 </body>
