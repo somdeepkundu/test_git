@@ -139,6 +139,11 @@ _TEMPLATE = """
       border-color: var(--neon-cyan);
       box-shadow: 0 0 22px rgba(0,255,245,.45);
     }
+    /* Make the input easier to tap and type in on mobile */
+    @media (pointer: coarse) {
+      #name-input { font-size: 20px; padding: 16px 20px; width: 300px; }
+      #launch-btn { font-size: 19px; padding: 16px 48px; }
+    }
     #launch-btn {
       padding: 13px 42px;
       background: rgba(0,255,245,.1);
@@ -327,6 +332,11 @@ _TEMPLATE = """
       text-align: center; max-width: 810px;
     }
     footer a { color: rgba(0,255,245,.5); text-decoration: none; }
+
+    /* ── Responsive scaling ─────────────────────────────── */
+    #gamefield {
+      transform-origin: top center;
+    }
   </style>
 </head>
 <body>
@@ -656,7 +666,19 @@ _TEMPLATE = """
       requestAnimationFrame(tick);
     }
 
+    // ── Responsive scaling ────────────────────────────────
+    function applyScale() {
+      const field = document.getElementById('gamefield');
+      const s = Math.min(1, (window.innerWidth - 8) / 810);
+      field.style.transform = s < 1 ? `scale(${s})` : '';
+      // Collapse the dead layout space left by the shrunken element
+      field.style.marginBottom = s < 1 ? `${Math.round(480 * s - 480)}px` : '';
+    }
+    window.addEventListener('resize', applyScale);
+
     window.addEventListener('load', () => {
+      applyScale();
+
       // Pre-fill name from last session
       try {
         const saved = localStorage.getItem('aa-player');
