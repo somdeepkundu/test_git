@@ -5,6 +5,8 @@
 //  markers track the objects on the locked dark map.
 // ─────────────────────────────────────────────────────
 
+const VERSION = "v1.1.13";
+
 const ASTEROID_IMGS = [
   '../abstract-asteroids/assets/graphics/asteroid1.svg',
   '../abstract-asteroids/assets/graphics/asteroid2.svg',
