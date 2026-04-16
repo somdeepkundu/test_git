@@ -238,9 +238,17 @@ function endGame() {
 }
 
 // ── Entry point ──────────────────────────────────────
+// ── Entry point ──────────────────────────────────────
 window.addEventListener('load', () => {
   document.addEventListener('keydown', keypressHandler);
   document.addEventListener('keyup',   keypressHandler);
+
+  // Add the resize listener right here:
+  window.addEventListener('resize', () => {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    map.invalidateSize(); 
+  });
 
   initMap();
   map.whenReady(() => {
