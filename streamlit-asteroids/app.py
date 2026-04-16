@@ -29,6 +29,14 @@ AST2 = _b64("asteroid2.svg")
 SHOT = _b64("green_projectile.svg")
 EXPL = _b64("explosion.svg")
 
+# Google Apps Script web app URL for the leaderboard (see apps_script.js).
+# Add it to Streamlit Cloud → Settings → Secrets as: APPS_SCRIPT_URL = "..."
+# If missing, the game still runs — the leaderboard section just stays hidden.
+try:
+    SCRIPT_URL = st.secrets.get("APPS_SCRIPT_URL", "")
+except Exception:
+    SCRIPT_URL = ""
+
 # ── HTML template ──────────────────────────────────────────────────────────────
 # Use __PLACEHOLDERS__ for SVG data URIs (avoids Python f-string brace conflicts).
 # All ${...} inside <script> are plain JS template literals, not Python.
@@ -241,6 +249,40 @@ _TEMPLATE = """
       0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.75;transform:scale(1.04)}
     }
 
+    /* ── Leaderboard (inside game-over screen) ─────────── */
+    .lb-wrap {
+      margin-top: 8px; width: 320px;
+      background: rgba(0,0,0,.45);
+      border: 1px solid rgba(0,255,245,.35); border-radius: 10px;
+      padding: 10px 12px;
+      box-shadow: 0 0 14px rgba(0,255,245,.15);
+    }
+    .lb-title {
+      font-size: 13px; font-weight: 900; letter-spacing: 3px;
+      color: var(--neon-cyan); text-align: center;
+      text-shadow: 0 0 8px var(--neon-cyan);
+      margin-bottom: 8px; text-transform: uppercase;
+    }
+    .lb-row {
+      display: grid; grid-template-columns: 28px 1fr auto;
+      gap: 8px; padding: 4px 6px; border-radius: 5px;
+      font-size: 12px; letter-spacing: 1.5px;
+      color: rgba(255,255,255,.85);
+    }
+    .lb-row + .lb-row { margin-top: 2px; }
+    .lb-rank  { color: rgba(0,255,245,.7); font-weight: 700; text-align: right; }
+    .lb-name  { color: white; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-score { color: var(--neon-yellow); font-weight: 900; text-shadow: 0 0 6px var(--neon-yellow); }
+    .lb-me {
+      background: rgba(255,0,110,.18);
+      box-shadow: inset 0 0 0 1px rgba(255,0,110,.55);
+    }
+    .lb-me .lb-name  { color: var(--neon-pink); text-shadow: 0 0 6px var(--neon-pink); }
+    .lb-empty {
+      font-size: 11px; color: rgba(255,255,255,.4);
+      text-align: center; font-style: italic; padding: 6px 0;
+    }
+
     /* ── Mobile controls ────────────────────────────────── */
     #mobile-controls {
       display: none;
@@ -328,6 +370,7 @@ _TEMPLATE = """
 
   <script>
     const ASTEROID_IMGS = ['__AST1__', '__AST2__'];
+    const SCRIPT_URL    = '__SCRIPT_URL__';   // Apps Script web-app URL (may be empty)
 
     // ── Player state ──────────────────────────────────────
     let playerName = '';
@@ -525,18 +568,75 @@ _TEMPLATE = """
       render();
     }
 
+    // ── Leaderboard helpers ───────────────────────────────
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+
+    async function submitScore() {
+      if (!SCRIPT_URL) return;
+      try {
+        const url = SCRIPT_URL + '?action=post&name=' +
+          encodeURIComponent(playerName) + '&score=' + points;
+        await fetch(url, { method:'GET', mode:'no-cors' });
+      } catch(e) { /* non-fatal */ }
+    }
+
+    async function fetchLeaderboard() {
+      if (!SCRIPT_URL) return null;
+      try {
+        const res = await fetch(SCRIPT_URL + '?action=get');
+        if (!res.ok) return null;
+        return await res.json();
+      } catch(e) { return null; }
+    }
+
+    function renderLeaderboard(list) {
+      const host = document.getElementById('lb-body');
+      if (!host) return;
+      if (!list || list.length === 0) {
+        host.innerHTML = '<div class="lb-empty">No scores yet &mdash; be the first!</div>';
+        return;
+      }
+      let seenSelf = false;
+      const rows = list.map((e, i) => {
+        const isMe = !seenSelf && e.name === playerName && e.score === points;
+        if (isMe) seenSelf = true;
+        return '<div class="lb-row' + (isMe ? ' lb-me' : '') + '">' +
+          '<div class="lb-rank">' + (i + 1) + '</div>' +
+          '<div class="lb-name">' + escapeHtml(e.name) + '</div>' +
+          '<div class="lb-score">' + e.score + '</div>' +
+          '</div>';
+      }).join('');
+      host.innerHTML = rows;
+    }
+
     // ── Game over ─────────────────────────────────────────
-    function endGame() {
+    async function endGame() {
       gameOver = true;
       const div = document.createElement('div');
       div.id = 'gameover';
       div.innerHTML =
         '<div class="gameover-title">GAME OVER</div>' +
-        '<div class="gameover-pilot">' + playerName + ' &mdash; ' + points + ' PTS</div>' +
+        '<div class="gameover-pilot">' + escapeHtml(playerName) + ' &mdash; ' + points + ' PTS</div>' +
+        (SCRIPT_URL
+          ? '<div class="lb-wrap"><div class="lb-title">Top Pilots</div>' +
+            '<div id="lb-body"><div class="lb-empty">Loading&hellip;</div></div></div>'
+          : '') +
         '<div class="gameover-credit">Developed by Somdeep Kundu &middot; @RuDRA Lab, C-TARA, IITB</div>' +
         '<div class="gameover-source">learned from &ldquo;Problem Solving with Abstraction&rdquo; by Programming 2.0 (YouTube)</div>' +
         '<button class="play-again-btn" onclick="location.reload()">&#8635; PLAY AGAIN</button>';
       document.getElementById('gamefield').appendChild(div);
+
+      if (SCRIPT_URL) {
+        await submitScore();
+        // Small delay so the appended row is visible in the read-back
+        await new Promise(r => setTimeout(r, 600));
+        const board = await fetchLeaderboard();
+        renderLeaderboard(board);
+      }
     }
 
     // ── Start screen logic ────────────────────────────────
@@ -585,6 +685,7 @@ html = (
     .replace("__AST2__", AST2)
     .replace("__SHOT__", SHOT)
     .replace("__EXPL__", EXPL)
+    .replace("__SCRIPT_URL__", SCRIPT_URL)
 )
 
 st.components.v1.html(html, height=580, scrolling=False)
