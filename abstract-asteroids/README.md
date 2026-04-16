@@ -10,6 +10,20 @@ A browser-based shoot'em'up game built with **vanilla HTML, CSS, and JavaScript*
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshots/gameplay.png" alt="Gameplay — dodging asteroids and scoring points" width="700" />
+  <br /><em>Gameplay — navigate through asteroid fields and shoot them down</em>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/gameover.png" alt="Game Over screen with final score and credits" width="700" />
+  <br /><em>Game Over — dramatic neon overlay with your final score</em>
+</p>
+
+---
+
 ## Gameplay
 
 <table>
