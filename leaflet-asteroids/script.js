@@ -122,6 +122,40 @@ function resetAsteroid(a) {
   a.s = Math.random() * 100 + 50;
 }
 
+// ── Powerups ─────────────────────────────────────────
+const powerups = [];
+
+function spawnHealth() {
+  const obj = {
+    x: Math.random() * W,
+    y: -30,
+    w: 30, h: 30,
+    s: 80 // Falls a bit slower so the player has time to catch it
+  };
+  obj.marker = L.marker(px(obj.x, obj.y), {
+    icon: L.divIcon({
+      className: '',
+      html: '<div class="health-icon"></div>',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+    }),
+    interactive: false,
+    zIndexOffset: 400,
+  }).addTo(map);
+  powerups.push(obj);
+}
+
+function movePowerups(dt) {
+  for (let i = powerups.length - 1; i >= 0; i--) {
+    powerups[i].y += powerups[i].s * dt;
+    // Remove if it falls off the screen
+    if (powerups[i].y > H + 30) {
+      map.removeLayer(powerups[i].marker);
+      powerups.splice(i, 1);
+    }
+  }
+}
+
 // ── Shots ────────────────────────────────────────────
 const shots = [];
 
