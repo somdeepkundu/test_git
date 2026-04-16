@@ -208,15 +208,27 @@ function isColliding(a, b) {
 }
 
 // ── Render ───────────────────────────────────────────
+// function render() {
+//   shipMarker.setLatLng(px(ship.x, ship.y));
+//   for (const a of asteroids) a.marker.setLatLng(px(a.x, a.y));
+//   for (const s of shots)     s.marker.setLatLng(px(s.x, s.y));
+
+//   document.getElementById('number').textContent = String(points).padStart(3, '0');
+//   document.getElementById('healthbar').style.width = `${Math.max(ship.hl, 0)}%`;
+// }
+
+// ── 
 function render() {
   shipMarker.setLatLng(px(ship.x, ship.y));
   for (const a of asteroids) a.marker.setLatLng(px(a.x, a.y));
   for (const s of shots)     s.marker.setLatLng(px(s.x, s.y));
+  for (const p of powerups)  p.marker.setLatLng(px(p.x, p.y)); // <-- Health powerup rendered here
 
   document.getElementById('number').textContent = String(points).padStart(3, '0');
   document.getElementById('healthbar').style.width = `${Math.max(ship.hl, 0)}%`;
 }
 
+// ── Game loop ────────────────────────────────────────
 // ── Game loop ────────────────────────────────────────
 let points = 0, gameOver = false, lastTime = 0;
 
@@ -231,6 +243,18 @@ function tick(ts) {
   moveShip(dt);
   moveAsteroids(dt);
   moveShots(dt);
+  movePowerups(dt); // <-- Move the health powerups
+
+  // Powerup ↔ ship collision check
+  for (let i = powerups.length - 1; i >= 0; i--) {
+    const p = powerups[i];
+    if (isColliding(p, ship)) {
+      ship.hl = Math.min(100, ship.hl * 2); // Doubles life, caps at 100 max
+      map.removeLayer(p.marker);
+      powerups.splice(i, 1);
+      break;
+    }
+  }
 
   // Asteroid ↔ ship
   for (const a of asteroids) {
@@ -273,11 +297,31 @@ function endGame() {
 
 // ── Entry point ──────────────────────────────────────
 // ── Entry point ──────────────────────────────────────
+// window.addEventListener('load', () => {
+//   document.addEventListener('keydown', keypressHandler);
+//   document.addEventListener('keyup',   keypressHandler);
+
+//   // Add the resize listener right here:
+//   window.addEventListener('resize', () => {
+//     W = window.innerWidth;
+//     H = window.innerHeight;
+//     map.invalidateSize(); 
+//   });
+
+//   initMap();
+//   map.whenReady(() => {
+//     initShip();
+//     for (let i = 0; i < 10; i++) spawnAsteroid();
+//     requestAnimationFrame(tick);
+//   });
+// });
+
+// ── Entry point ──────────────────────────────────────
 window.addEventListener('load', () => {
   document.addEventListener('keydown', keypressHandler);
   document.addEventListener('keyup',   keypressHandler);
 
-  // Add the resize listener right here:
+  // Keeps the map sized correctly if the window changes
   window.addEventListener('resize', () => {
     W = window.innerWidth;
     H = window.innerHeight;
@@ -288,6 +332,10 @@ window.addEventListener('load', () => {
   map.whenReady(() => {
     initShip();
     for (let i = 0; i < 10; i++) spawnAsteroid();
+    
+    // Spawn a health pack every 15 seconds!
+    setInterval(spawnHealth, 15000); 
+
     requestAnimationFrame(tick);
   });
 });
