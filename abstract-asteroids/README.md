@@ -19,7 +19,7 @@ A browser-based shoot'em'up game built with **vanilla HTML, CSS, and JavaScript*
 
 <p align="center">
   <img src="assets/screenshots/gameover.png" alt="Game Over screen with final score and credits" width="700" />
-  <br /><em>Game Over — dramatic neon overlay with your final score</em>
+  <br /><em>Game Over with your final score</em>
 </p>
 
 ---
