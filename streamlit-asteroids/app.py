@@ -9,7 +9,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Hide Streamlit chrome for a clean game presentation
 st.markdown(
     """<style>
     #MainMenu, header, footer { visibility: hidden; }
@@ -18,9 +17,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---------------------------------------------------------------------------
-# Load SVG assets as base64 data URIs so they work inside the iframe
-# ---------------------------------------------------------------------------
 ASSETS = Path(__file__).parent.parent / "abstract-asteroids" / "assets" / "graphics"
 
 def _b64(name: str) -> str:
@@ -29,14 +25,10 @@ def _b64(name: str) -> str:
 
 SHIP = _b64("spaceship_full.svg")
 AST1 = _b64("asteroid1.svg")
-AST2  = _b64("asteroid2.svg")
+AST2 = _b64("asteroid2.svg")
 SHOT = _b64("green_projectile.svg")
 EXPL = _b64("explosion.svg")
 
-# ---------------------------------------------------------------------------
-# Self-contained HTML/CSS/JS game
-# Use __PLACEHOLDERS__ to avoid clashing with Python f-string braces
-# ---------------------------------------------------------------------------
 _TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">
@@ -172,6 +164,57 @@ _TEMPLATE = """
       text-align: center; max-width: 810px;
     }
     footer a { color: rgba(0,255,245,.5); text-decoration: none; }
+
+    /* ── Mobile on-screen controls ─────────────────────── */
+    #mobile-controls {
+      display: none;                      /* revealed by JS on touch devices */
+      position: absolute;
+      bottom: 14px; left: 0; right: 0;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 18px;
+      z-index: 200;
+    }
+    #dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(3, 52px);
+      gap: 5px;
+    }
+    #btn-up    { grid-column: 2; grid-row: 1; }
+    #btn-left  { grid-column: 1; grid-row: 2; }
+    #btn-right { grid-column: 3; grid-row: 2; }
+    #btn-down  { grid-column: 2; grid-row: 3; }
+    .ctrl-btn {
+      width: 52px; height: 52px;
+      background: rgba(0,255,245,.12);
+      border: 2px solid rgba(0,255,245,.45);
+      border-radius: 10px;
+      color: var(--neon-cyan); font-size: 20px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; touch-action: none;
+      transition: background .08s;
+    }
+    .ctrl-btn:active { background: rgba(0,255,245,.38); }
+    #btn-fire {
+      width: 74px; height: 74px;
+      border-radius: 50%;
+      font-size: 12px; font-weight: 900; letter-spacing: 1px;
+      background: rgba(255,0,110,.15);
+      border: 2px solid rgba(255,0,110,.6);
+      color: var(--neon-pink);
+      font-family: 'Orbitron', monospace;
+      text-shadow: 0 0 8px var(--neon-pink);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; touch-action: none;
+      margin-bottom: 14px;
+      transition: background .08s;
+    }
+    #btn-fire:active { background: rgba(255,0,110,.42); }
   </style>
 </head>
 <body>
@@ -179,7 +222,19 @@ _TEMPLATE = """
     <div id="health"><div id="healthbar"></div></div>
     <div id="score"><span id="number">0</span> points</div>
     <div class="spaceship"></div>
+
+    <!-- On-screen controls: shown only on touch devices via JS -->
+    <div id="mobile-controls">
+      <div id="dpad">
+        <button id="btn-up"    class="ctrl-btn">&#9650;</button>
+        <button id="btn-left"  class="ctrl-btn">&#9664;</button>
+        <button id="btn-right" class="ctrl-btn">&#9654;</button>
+        <button id="btn-down"  class="ctrl-btn">&#9660;</button>
+      </div>
+      <button id="btn-fire">FIRE</button>
+    </div>
   </div>
+
   <footer>
     Graphics from FreePik:
     <a href="https://www.freepik.com/free-vector/asteroid-space-scene-background_5184427.htm">asteroids</a>,
@@ -200,10 +255,17 @@ _TEMPLATE = """
       document.addEventListener('keydown', keypressHandler);
       document.addEventListener('keyup',   keypressHandler);
       document.addEventListener('click', () => document.body.focus());
+
+      // Show touch controls automatically on touch-capable devices
+      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        setupMobileControls();
+      }
+
       createAsteroids();
       requestAnimationFrame(tick);
     }
 
+    // ── Keyboard ─────────────────────────────────────────
     function keypressHandler(event) {
       const value = event.type === 'keydown';
       const key = event.key;
@@ -217,10 +279,36 @@ _TEMPLATE = """
       if (key === ' ' && event.type === 'keyup') controls.spaceHeld = false;
     }
 
+    // ── Mobile touch controls ────────────────────────────
+    function setupMobileControls() {
+      document.getElementById('mobile-controls').style.display = 'flex';
+
+      const dirs = { 'btn-up':'up', 'btn-down':'down', 'btn-left':'left', 'btn-right':'right' };
+      for (const [id, dir] of Object.entries(dirs)) {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', e => { e.preventDefault(); controls[dir] = true;  }, { passive: false });
+        btn.addEventListener('touchend',   e => { e.preventDefault(); controls[dir] = false; }, { passive: false });
+        btn.addEventListener('touchcancel',() => { controls[dir] = false; });
+        btn.addEventListener('mousedown',  () => controls[dir] = true);
+        btn.addEventListener('mouseup',    () => controls[dir] = false);
+        btn.addEventListener('mouseleave', () => controls[dir] = false);
+      }
+
+      const fire = document.getElementById('btn-fire');
+      fire.addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (!controls.spaceHeld) { fireShot(); controls.spaceHeld = true; }
+      }, { passive: false });
+      fire.addEventListener('touchend',    e => { e.preventDefault(); controls.spaceHeld = false; }, { passive: false });
+      fire.addEventListener('touchcancel', () => { controls.spaceHeld = false; });
+      fire.addEventListener('mousedown',   () => { if (!controls.spaceHeld) { fireShot(); controls.spaceHeld = true; } });
+      fire.addEventListener('mouseup',     () => { controls.spaceHeld = false; });
+    }
+
     const controls = { up:false, down:false, left:false, right:false, spaceHeld:false };
     let points = 0, gameOver = false;
 
-    // -- SHOTS --
+    // ── Shots ────────────────────────────────────────────
     const shots = [];
     function fireShot() {
       const div = document.createElement('div');
@@ -239,7 +327,7 @@ _TEMPLATE = """
       shots.splice(shots.indexOf(shot), 1);
     }
 
-    // -- ASTEROIDS --
+    // ── Asteroids ────────────────────────────────────────
     const asteroids = [];
     function createAsteroids() {
       for (let i = 0; i < 10; i++) {
@@ -261,7 +349,7 @@ _TEMPLATE = """
       a.y = -30; a.x = Math.floor(Math.random()*750); a.s = Math.random()*100+50;
     }
 
-    // -- SPACESHIP --
+    // ── Spaceship ────────────────────────────────────────
     const spaceship = { x:380, y:370, s:300, w:60, h:80, hl:100 };
     function moveSpaceship(delta) {
       if (controls.left  && spaceship.x > spaceship.w/2) spaceship.x -= spaceship.s*delta;
@@ -270,13 +358,13 @@ _TEMPLATE = """
       else if (controls.down  && spaceship.y < 410)      spaceship.y += spaceship.s*delta;
     }
 
-    // -- COLLISION --
+    // ── Collision ────────────────────────────────────────
     function isColliding(a, b) {
       const dx = a.x-b.x, dy = a.y-b.y;
       return Math.sqrt(dx*dx+dy*dy) < (a.w/2+b.w/2);
     }
 
-    // -- GAME LOOP --
+    // ── Game loop ────────────────────────────────────────
     let lastTime = 0;
     function tick(timestamp) {
       if (gameOver) return;
@@ -342,7 +430,7 @@ html = (
     _TEMPLATE
     .replace("__SHIP__", SHIP)
     .replace("__AST1__", AST1)
-    .replace("__AST2__",  AST2)
+    .replace("__AST2__", AST2)
     .replace("__SHOT__", SHOT)
     .replace("__EXPL__", EXPL)
 )
