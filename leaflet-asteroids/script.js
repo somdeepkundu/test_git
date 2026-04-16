@@ -322,6 +322,7 @@ function endGame() {
 window.addEventListener('load', () => {
   document.addEventListener('keydown', keypressHandler);
   document.addEventListener('keyup',   keypressHandler);
+  document.getElementById('version').textContent = VERSION;
 
   // Keeps the map sized correctly if the window changes
   window.addEventListener('resize', () => {
