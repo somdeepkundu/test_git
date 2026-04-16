@@ -1,0 +1,203 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+:root {
+  --neon-cyan: #00fff5;
+  --neon-pink: #ff006e;
+  --neon-yellow: #ffd60a;
+  --neon-green: #39ff14;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  overflow: hidden;
+  background: #000;
+  font-family: 'Orbitron', 'Courier New', monospace;
+}
+
+#map {
+  width: 100vw;
+  height: 100vh;
+}
+
+.leaflet-container:focus { outline: none; }
+
+/* ── Game object icons ────────────────────────────── */
+.spaceship-icon {
+  width: 60px;
+  height: 80px;
+  background-image: url('../abstract-asteroids/assets/graphics/spaceship_full.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 245, 0.7))
+          drop-shadow(0 0 20px rgba(0, 255, 245, 0.3));
+}
+
+.asteroid-icon {
+  width: 50px;
+  height: 50px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 0 6px rgba(255, 80, 80, 0.4));
+  animation: tumble 10s linear infinite;
+}
+
+.shot-icon {
+  width: 20px;
+  height: 30px;
+  background-image: url('../abstract-asteroids/assets/graphics/green_projectile.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 0 8px rgba(57, 255, 20, 0.9))
+          drop-shadow(0 0 16px rgba(57, 255, 20, 0.5));
+}
+
+.explosion-icon {
+  width: 60px;
+  height: 60px;
+  background-image: url('../abstract-asteroids/assets/graphics/explosion.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  animation: explode 0.5s ease-out forwards;
+}
+
+@keyframes tumble {
+  from { rotate: 0deg; }
+  to   { rotate: 360deg; }
+}
+
+@keyframes explode {
+  from { opacity: 1; transform: scale(0.5); }
+  to   { opacity: 0; transform: scale(2); }
+}
+
+/* ── HUD ──────────────────────────────────────────── */
+#hud {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+#health {
+  width: 300px;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid var(--neon-cyan);
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 2px;
+  box-shadow: 0 0 12px rgba(0, 255, 245, 0.6), inset 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+#healthbar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg,
+    var(--neon-pink) 0%,
+    #ff7b00 40%,
+    var(--neon-yellow) 70%,
+    var(--neon-green) 100%);
+  background-size: 300px 100%;
+  background-position: right;
+  border-radius: 8px;
+  transition: width 0.25s ease-out;
+}
+
+#score {
+  font-size: 22px;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px var(--neon-cyan), 0 0 18px var(--neon-cyan);
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+#score #number {
+  color: white;
+  margin-right: 6px;
+  text-shadow: 0 0 8px white, 0 0 18px var(--neon-pink), 0 0 28px var(--neon-pink);
+}
+
+/* ── Instructions ─────────────────────────────────── */
+#instructions {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  letter-spacing: 2px;
+  z-index: 1000;
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+/* ── Game Over ────────────────────────────────────── */
+#gameover {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 0, 110, 0.25) 0%,
+    rgba(0, 0, 0, 0.92) 70%);
+  z-index: 2000;
+  text-align: center;
+  backdrop-filter: blur(2px);
+}
+
+.gameover-title {
+  color: var(--neon-pink);
+  font-size: 46px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 12px var(--neon-pink),
+    0 0 30px var(--neon-pink),
+    0 0 60px white;
+  animation: gameover-pulse 1.6s ease-in-out infinite;
+}
+
+.gameover-credit {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(0, 255, 245, 0.6);
+}
+
+.gameover-source {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  font-style: italic;
+  letter-spacing: 1px;
+  max-width: 560px;
+}
+
+@keyframes gameover-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.75; transform: scale(1.04); }
+}
+
+/* ── Leaflet attribution ──────────────────────────── */
+.leaflet-control-attribution {
+  font-size: 9px !important;
+  opacity: 0.5;
+}
