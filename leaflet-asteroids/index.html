@@ -15,11 +15,31 @@
       <div id="healthbar"></div>
     </div>
     <div id="score"><span id="number">000</span> pts</div>
+    <div id="level-indicator">LEVEL 1</div>
   </div>
 
   <div id="instructions">WASD / Arrow Keys &middot; SPACE to shoot</div>
 
   <div id="version"></div>
+
+  <!-- Start Screen -->
+  <div id="startscreen">
+    <div class="start-box">
+      <div class="start-title">LEAFLET<br>ASTEROIDS</div>
+      <div class="start-version" id="start-version"></div>
+      <input
+        type="text"
+        id="player-name"
+        class="name-input"
+        placeholder="Enter your name"
+        maxlength="20"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="start-btn" id="start-btn">PLAY</button>
+      <div class="start-hint">WASD / Arrow Keys &middot; SPACE to shoot</div>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="script.js"></script>
