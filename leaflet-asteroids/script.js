@@ -5,23 +5,32 @@
 //  GitHub Pages repo and it works immediately.
 // ─────────────────────────────────────────────────────
 
-const VERSION = "v1.1.13";
-
-// ── Inline SVG assets (no external files needed) ─────
-const SPACESHIP_SVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 80'><defs><radialGradient id='eng' cx='50%25' cy='80%25' r='50%25'><stop offset='0%25' stop-color='%23ffd60a'/><stop offset='100%25' stop-color='%23ff7b00' stop-opacity='0'/></radialGradient></defs><polygon points='30,4 8,62 30,50 52,62' fill='%2300fff5' opacity='0.95'/><polygon points='8,62 0,76 20,58' fill='%23ff006e'/><polygon points='52,62 60,76 40,58' fill='%23ff006e'/><ellipse cx='30' cy='64' rx='12' ry='8' fill='url(%23eng)'/><circle cx='30' cy='28' r='6' fill='%23ffffff' opacity='0.18'/><line x1='30' y1='8' x2='30' y2='50' stroke='%23ffffff' stroke-width='1' opacity='0.25'/></svg>`;
-
-const ASTEROID_SVGS = [
-  `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'><polygon points='25,2 40,7 48,20 44,38 28,48 10,46 2,30 6,12 18,4' fill='%23796045' stroke='%23b08a55' stroke-width='1.5'/><circle cx='16' cy='15' r='4.5' fill='%234a3520' opacity='0.75'/><circle cx='34' cy='28' r='3' fill='%234a3520' opacity='0.75'/><circle cx='22' cy='36' r='2' fill='%234a3520' opacity='0.6'/><circle cx='38' cy='14' r='2.5' fill='%234a3520' opacity='0.5'/></svg>`,
-  `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 50 50'><polygon points='26,2 44,10 48,28 38,46 18,48 4,36 4,18 16,6' fill='%23625040' stroke='%23988060' stroke-width='1.5'/><circle cx='20' cy='18' r='5' fill='%23382810' opacity='0.7'/><circle cx='34' cy='22' r='3.5' fill='%23382810' opacity='0.65'/><circle cx='26' cy='38' r='2.5' fill='%23382810' opacity='0.6'/><circle cx='12' cy='32' r='2' fill='%23382810' opacity='0.5'/></svg>`,
-];
-
-const SHOT_SVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 30'><defs><radialGradient id='sg' cx='50%25' cy='40%25' r='60%25'><stop offset='0%25' stop-color='%23ffffff'/><stop offset='40%25' stop-color='%2339ff14'/><stop offset='100%25' stop-color='%2339ff14' stop-opacity='0.2'/></radialGradient></defs><ellipse cx='10' cy='15' rx='5' ry='13' fill='url(%23sg)'/></svg>`;
-
-const EXPLOSION_SVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'><circle cx='30' cy='30' r='28' fill='%23ff7b00' opacity='0.7'/><circle cx='30' cy='30' r='18' fill='%23ffd60a' opacity='0.9'/><circle cx='30' cy='30' r='9' fill='%23ffffff' opacity='0.95'/><polygon points='30,0 34,24 58,30 34,36 30,60 26,36 2,30 26,24' fill='%23ff006e' opacity='0.55'/></svg>`;
+const VERSION = "v2.0.0";
 
 const HEALTH_SVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%23001a00' opacity='0.7'/><path d='M19 10.5H13.5V5H10.5V10.5H5V13.5H10.5V19H13.5V13.5H19V10.5Z' fill='%2339ff14'/></svg>`;
 
+
+// Asset paths (real SVG files from abstract-asteroids)
+const ASSETS = {
+  spaceship: 'assets/graphics/spaceship_full.svg',
+  asteroid1: 'assets/graphics/asteroid1.svg',
+  asteroid2: 'assets/graphics/asteroid2.svg',
+  shot:      'assets/graphics/green_projectile.svg',
+  explosion: 'assets/graphics/explosion.svg',
+};
+
+// Progressive difficulty levels
+const LEVELS = [
+  { minScore:   0, count:  3, speedMin:  50, speedMax: 100, label: 'LEVEL 1' },
+  { minScore:  50, count:  5, speedMin:  65, speedMax: 130, label: 'LEVEL 2' },
+  { minScore: 150, count:  7, speedMin:  80, speedMax: 160, label: 'LEVEL 3' },
+  { minScore: 300, count:  9, speedMin:  95, speedMax: 195, label: 'LEVEL 4' },
+  { minScore: 500, count: 12, speedMin: 115, speedMax: 225, label: 'LEVEL 5' },
+  { minScore: 800, count: 15, speedMin: 135, speedMax: 260, label: 'LEVEL 6' },
+];
+let currentLevel = 0;
 let map, W, H;
+let playerName = "Player";
 
 // ── Map initialisation ───────────────────────────────
 function initMap() {
@@ -81,7 +90,7 @@ function initShip() {
   shipMarker = L.marker(px(ship.x, ship.y), {
     icon: L.divIcon({
       className: '',
-      html: `<img src="${SPACESHIP_SVG}" width="60" height="80" style="display:block;filter:drop-shadow(0 0 10px rgba(0,255,245,0.8)) drop-shadow(0 0 22px rgba(0,255,245,0.4))">`,
+      html: `<img src="${ASSETS.spaceship}" width="60" height="80" style="display:block;filter:drop-shadow(0 0 10px rgba(0,255,245,0.8)) drop-shadow(0 0 22px rgba(0,255,245,0.4))">`,
       iconSize: [60, 80],
       iconAnchor: [30, 40],
     }),
@@ -101,17 +110,18 @@ function moveShip(dt) {
 const asteroids = [];
 
 function spawnAsteroid() {
-  const svgSrc = ASTEROID_SVGS[Math.floor(Math.random() * ASTEROID_SVGS.length)];
+  const src = Math.random() < 0.5 ? ASSETS.asteroid1 : ASSETS.asteroid2;
+  const lvl = LEVELS[currentLevel];
   const obj = {
     x: Math.random() * W,
     y: -30,
     w: 50, h: 50,
-    s: Math.random() * 100 + 50,
+    s: Math.random() * (lvl.speedMax - lvl.speedMin) + lvl.speedMin,
   };
   obj.marker = L.marker(px(obj.x, obj.y), {
     icon: L.divIcon({
       className: '',
-      html: `<img src="${svgSrc}" width="50" height="50" class="asteroid-spin" style="display:block;filter:drop-shadow(0 0 6px rgba(255,80,80,0.5))">`,
+      html: `<img src="${src}" width="50" height="50" class="asteroid-spin" style="display:block;filter:drop-shadow(0 0 6px rgba(255,80,80,0.5))">`,
       iconSize: [50, 50],
       iconAnchor: [25, 25],
     }),
@@ -130,7 +140,8 @@ function moveAsteroids(dt) {
 function resetAsteroid(a) {
   a.y = -30;
   a.x = Math.random() * W;
-  a.s = Math.random() * 100 + 50;
+  const lvl = LEVELS[currentLevel];
+  a.s = Math.random() * (lvl.speedMax - lvl.speedMin) + lvl.speedMin;
 }
 
 // ── Powerups ─────────────────────────────────────────
@@ -175,7 +186,7 @@ function fireShot() {
   obj.marker = L.marker(px(obj.x, obj.y), {
     icon: L.divIcon({
       className: '',
-      html: `<img src="${SHOT_SVG}" width="20" height="30" style="display:block;filter:drop-shadow(0 0 8px rgba(57,255,20,0.95)) drop-shadow(0 0 18px rgba(57,255,20,0.5))">`,
+      html: `<img src="${ASSETS.shot}" width="20" height="30" style="display:block;filter:drop-shadow(0 0 8px rgba(57,255,20,0.95)) drop-shadow(0 0 18px rgba(57,255,20,0.5))">`,
       iconSize: [20, 30],
       iconAnchor: [10, 15],
     }),
@@ -202,7 +213,7 @@ function explodeAt(x, y) {
   const m = L.marker(px(x, y), {
     icon: L.divIcon({
       className: '',
-      html: `<img src="${EXPLOSION_SVG}" width="60" height="60" class="explode-anim" style="display:block">`,
+      html: `<img src="${ASSETS.explosion}" width="60" height="60" class="explode-anim" style="display:block">`,
       iconSize: [60, 60],
       iconAnchor: [30, 30],
     }),
@@ -227,6 +238,35 @@ function render() {
 
   document.getElementById('number').textContent = String(points).padStart(3, '0');
   document.getElementById('healthbar').style.width = `${Math.max(ship.hl, 0)}%`;
+  document.getElementById('level-indicator').textContent = LEVELS[currentLevel].label;
+}
+
+
+// ── Difficulty progression ────────────────────────────
+function getLevelIndex(score) {
+  let idx = 0;
+  for (let i = 0; i < LEVELS.length; i++) {
+    if (score >= LEVELS[i].minScore) idx = i;
+  }
+  return idx;
+}
+
+function levelUp(newIdx) {
+  currentLevel = newIdx;
+  const lvl = LEVELS[currentLevel];
+  while (asteroids.length < lvl.count) spawnAsteroid();
+  showLevelBanner(lvl.label);
+}
+
+function showLevelBanner(label) {
+  const el = document.createElement('div');
+  el.className = 'level-banner';
+  el.textContent = label;
+  document.body.appendChild(el);
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 600);
+  }, 1600);
 }
 
 // ── Game loop ────────────────────────────────────────
@@ -244,6 +284,10 @@ function tick(ts) {
   moveAsteroids(dt);
   moveShots(dt);
   movePowerups(dt);
+
+  // Check level up
+  const newLevel = getLevelIndex(points);
+  if (newLevel > currentLevel) levelUp(newLevel);
 
   // Powerup ↔ ship
   for (let i = powerups.length - 1; i >= 0; i--) {
@@ -288,7 +332,9 @@ function endGame() {
   const div = document.createElement('div');
   div.id = 'gameover';
   div.innerHTML = `
-    <div class="gameover-title">GAME OVER &mdash; ${points} pts</div>
+    <div class="gameover-title">GAME OVER</div>
+    <div class="gameover-player">${playerName} &mdash; ${points} pts</div>
+    <div class="gameover-level">Reached ${LEVELS[currentLevel].label}</div>
     <div class="gameover-credit">Developed by Somdeep Kundu &middot; @RuDRA Lab, C-TARA, IITB</div>
     <div class="gameover-source">learned from &ldquo;Problem Solving with Abstraction&rdquo; by Programming 2.0 (YouTube)</div>
     <button class="restart-btn" onclick="location.reload()">PLAY AGAIN</button>
@@ -297,22 +343,45 @@ function endGame() {
 }
 
 // ── Entry point ──────────────────────────────────────
-window.addEventListener('load', () => {
+function startGame() {
+  const input = document.getElementById('player-name');
+  const name = input.value.trim();
+  playerName = name.length > 0 ? name : "Player";
+
+  const screen = document.getElementById('startscreen');
+  screen.style.opacity = '0';
+  screen.style.transition = 'opacity 0.4s ease';
+  setTimeout(() => { screen.style.display = 'none'; }, 400);
+
   document.addEventListener('keydown', keypressHandler);
   document.addEventListener('keyup',   keypressHandler);
-  document.getElementById('version').textContent = VERSION;
-
-  window.addEventListener('resize', () => {
-    W = window.innerWidth;
-    H = window.innerHeight;
-    map.invalidateSize();
-  });
 
   initMap();
   map.whenReady(() => {
     initShip();
-    for (let i = 0; i < 10; i++) spawnAsteroid();
+    for (let i = 0; i < LEVELS[0].count; i++) spawnAsteroid();
     setInterval(spawnHealth, 15000);
     requestAnimationFrame(tick);
+  });
+}
+
+window.addEventListener('load', () => {
+  document.getElementById('version').textContent = VERSION;
+  document.getElementById('start-version').textContent = VERSION;
+
+  const btn = document.getElementById('start-btn');
+  const input = document.getElementById('player-name');
+
+  btn.addEventListener('click', startGame);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') startGame();
+  });
+
+  input.focus();
+
+  window.addEventListener('resize', () => {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    if (map) map.invalidateSize();
   });
 });
