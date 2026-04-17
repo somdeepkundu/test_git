@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 
 :root {
-  --neon-cyan: #00fff5;
-  --neon-pink: #ff006e;
+  --neon-cyan:   #00fff5;
+  --neon-pink:   #ff006e;
   --neon-yellow: #ffd60a;
-  --neon-green: #39ff14;
+  --neon-green:  #39ff14;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,57 +22,37 @@ body {
 
 .leaflet-container:focus { outline: none; }
 
-/* ── Game object icons ────────────────────────────── */
-.spaceship-icon {
-  width: 60px;
-  height: 80px;
-  background-image: url('../abstract-asteroids/assets/graphics/spaceship_full.svg');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  filter: drop-shadow(0 0 10px rgba(0, 255, 245, 0.7))
-          drop-shadow(0 0 20px rgba(0, 255, 245, 0.3));
-}
+/* ── Sprite animations ────────────────────────────── */
+/* Applied directly to the <img> tags created in script.js */
 
-.asteroid-icon {
-  width: 50px;
-  height: 50px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  filter: drop-shadow(0 0 6px rgba(255, 80, 80, 0.4));
+.asteroid-spin {
   animation: tumble 10s linear infinite;
+  transform-origin: center;
 }
 
-.shot-icon {
-  width: 20px;
-  height: 30px;
-  background-image: url('../abstract-asteroids/assets/graphics/green_projectile.svg');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  filter: drop-shadow(0 0 8px rgba(57, 255, 20, 0.9))
-          drop-shadow(0 0 16px rgba(57, 255, 20, 0.5));
+.health-pulse {
+  animation: hpulse 1s ease-in-out infinite;
+  transform-origin: center;
 }
 
-.explosion-icon {
-  width: 60px;
-  height: 60px;
-  background-image: url('../abstract-asteroids/assets/graphics/explosion.svg');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
+.explode-anim {
   animation: explode 0.5s ease-out forwards;
+  transform-origin: center;
 }
 
 @keyframes tumble {
-  from { rotate: 0deg; }
-  to   { rotate: 360deg; }
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes hpulse {
+  0%, 100% { transform: scale(1);    opacity: 1;    }
+  50%      { transform: scale(1.18); opacity: 0.75; }
 }
 
 @keyframes explode {
-  from { opacity: 1; transform: scale(0.5); }
-  to   { opacity: 0; transform: scale(2); }
+  from { opacity: 1; transform: scale(0.4); }
+  to   { opacity: 0; transform: scale(2.2); }
 }
 
 /* ── HUD ──────────────────────────────────────────── */
@@ -143,7 +123,7 @@ body {
   text-transform: uppercase;
 }
 
-/* ── Game Over ────────────────────────────────────── */
+/* ── Game Over overlay ────────────────────────────── */
 #gameover {
   position: fixed;
   inset: 0;
@@ -151,7 +131,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 18px;
   padding: 20px;
   background: radial-gradient(ellipse at center,
     rgba(255, 0, 110, 0.25) 0%,
@@ -191,30 +171,35 @@ body {
   max-width: 560px;
 }
 
+.restart-btn {
+  margin-top: 8px;
+  padding: 12px 36px;
+  background: transparent;
+  border: 2px solid var(--neon-cyan);
+  border-radius: 8px;
+  color: var(--neon-cyan);
+  font-family: 'Orbitron', monospace;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: 0 0 12px rgba(0, 255, 245, 0.5);
+  transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+}
+
+.restart-btn:hover {
+  background: rgba(0, 255, 245, 0.12);
+  box-shadow: 0 0 24px rgba(0, 255, 245, 0.8);
+  color: #ffffff;
+}
+
 @keyframes gameover-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.75; transform: scale(1.04); }
+  0%, 100% { opacity: 1;    transform: scale(1);    }
+  50%       { opacity: 0.75; transform: scale(1.04); }
 }
 
-/* ── Leaflet attribution ──────────────────────────── */
-.leaflet-control-attribution {
-  font-size: 9px !important;
-  opacity: 0.5;
-}
-
-/* ── Health Powerup ───────────────────────────────── */
-.health-icon {
-  width: 30px;
-  height: 30px;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2339ff14"><path d="M19 10.5H13.5V5H10.5V10.5H5V13.5H10.5V19H13.5V13.5H19V10.5Z"/></svg>');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  filter: drop-shadow(0 0 8px rgba(57, 255, 20, 0.9)) drop-shadow(0 0 16px rgba(57, 255, 20, 0.5));
-  animation: gameover-pulse 1s infinite;
-}
-
-/* ── Version ───────────────────────────────── */
+/* ── Version tag ──────────────────────────────────── */
 #version {
   position: fixed;
   bottom: 8px;
@@ -225,4 +210,10 @@ body {
   z-index: 1000;
   pointer-events: none;
   font-family: 'Orbitron', monospace;
+}
+
+/* ── Leaflet attribution ──────────────────────────── */
+.leaflet-control-attribution {
+  font-size: 9px !important;
+  opacity: 0.5;
 }
