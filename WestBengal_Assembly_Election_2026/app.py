@@ -564,7 +564,7 @@ def main():
 
     st.caption(
         "💡 **Hover** for quick info · **Click/Tap** for full details · "
-        f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM}"
+       # f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM}"
     )
 
     # Results table
