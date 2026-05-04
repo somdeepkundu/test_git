@@ -86,7 +86,31 @@ st.markdown("""
     [data-testid="stExpander"] {
         border: 1px solid #e0e0e0;
         border-radius: 8px;
-        background: white;
+        background: white !important;
+    }
+
+    [data-testid="stExpander"] summary {
+        background: white !important;
+        border-radius: 8px;
+    }
+
+    [data-testid="stExpander"] summary p,
+    [data-testid="stExpander"] summary span,
+    [data-testid="stExpander"] summary div,
+    [data-testid="stExpander"] [data-testid="stExpanderToggleIcon"],
+    .streamlit-expanderHeader,
+    .streamlit-expanderHeader p {
+        color: #1a1f3a !important;
+        font-weight: 600 !important;
+    }
+
+    [data-testid="stExpander"] > details > summary:hover {
+        background: #f5f5f5 !important;
+    }
+
+    [data-testid="stExpander"] > details {
+        background: white !important;
+        border-radius: 8px;
     }
     
     /* Caption and small text */
@@ -467,7 +491,7 @@ def sidebar(df, geojson, dist_bbox_map):
     
     **App developed by**\n
     [Somdeep Kundu](https://www.somdeepkundu.in)\n
-    RuDRA Lab, C-TARA, IIT Bombay
+    RuDRA Lab, CTARA
     
     **Data Source**\n
     [Election Commission of India](https://results.eci.gov.in/ResultAcGenMay2026/partywiseresult-S25.htm)
@@ -517,7 +541,7 @@ def main():
 
     st.caption(
         "💡 **Hover** for quick info · **Click/Tap** for full details · "
-        f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM}"
+        #f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM}"
     )
 
     # Results table
