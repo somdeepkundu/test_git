@@ -4,7 +4,6 @@ import requests, re, json
 import xml.etree.ElementTree as ET
 import folium
 from streamlit_folium import st_folium
-from datetime import datetime
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -13,6 +12,140 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ── Custom CSS for better aesthetics ──────────────────────────────────────────
+st.markdown("""
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Main container */
+    .main {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1a1f3a 0%, #16213e 100%);
+    }
+    
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        color: #e0e0e0;
+    }
+    
+    /* Title styling */
+    h1, h2, h3 {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 600;
+    }
+    
+    h1 {
+        color: #1a1f3a;
+        font-size: 2.2rem !important;
+        margin-bottom: 0.5rem;
+    }
+    
+    h2 {
+        color: #2c3e50;
+        font-size: 1.5rem !important;
+        margin-top: 1.5rem;
+        margin-bottom: 0.8rem;
+        border-bottom: 2px solid #FF9800;
+        padding-bottom: 0.5rem;
+    }
+    
+    h3 {
+        color: #e0e0e0;
+        font-size: 1.1rem !important;
+    }
+    
+    /* Metric cards */
+    [data-testid="metric-container"] {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-left: 4px solid #FF9800;
+    }
+    
+    /* Selectbox styling */
+    [data-testid="stSelectbox"] {
+        background: #fff !important;
+    }
+    
+    /* Button styling */
+    button {
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    /* Expander styling */
+    [data-testid="stExpander"] {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background: white;
+    }
+    
+    /* Caption and small text */
+    small, .caption {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    /* Markdown links */
+    a {
+        color: #FF9800;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+    
+    a:hover {
+        color: #FFA726;
+    }
+    
+    [data-testid="stSidebar"] a {
+        color: #FFA726;
+    }
+    
+    [data-testid="stSidebar"] a:hover {
+        color: #FFB74D;
+    }
+    
+    /* Logo container */
+    .logo-container {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding: 1rem 0;
+        border-bottom: 2px solid rgba(255,152,0,0.3);
+    }
+    
+    /* District info box */
+    .district-info {
+        background: linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(26,31,58,0.05) 100%);
+        border-left: 4px solid #FF9800;
+        padding: 1rem;
+        border-radius: 6px;
+        margin: 1rem 0;
+    }
+    
+    /* Responsive for mobile */
+    @media (max-width: 768px) {
+        h1 {
+            font-size: 1.8rem !important;
+        }
+        h2 {
+            font-size: 1.2rem !important;
+        }
+        [data-testid="metric-container"] {
+            padding: 1rem;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 REPO    = "https://raw.githubusercontent.com/somdeepkundu/test_git/master/WestBengal_Assembly_Election_2026"
@@ -28,6 +161,7 @@ PARTY_COLORS = {
     "AJU":    "#FFC107",
     "Other":  "#757575",
 }
+
 PARTY_ABBREV = {
     "Bharatiya Janata Party":             "BJP",
     "All India Trinamool Congress":       "AITC",
@@ -98,9 +232,7 @@ def load_geojson():
 def clean(s):
     return re.sub(r"\s*\(SC\)|\s*\(ST\)", "", str(s)).strip().upper()
 
-# ── Compute district bounding boxes ──────────────────────────────────────────
 def district_bounds(geojson):
-    """Return {dist_name: [[lat_min,lon_min],[lat_max,lon_max]]} """
     bounds = {}
     for f in geojson["features"]:
         dist = f["properties"].get("dist_name", "Unknown")
@@ -115,7 +247,6 @@ def district_bounds(geojson):
                 min(b[0], min(lats)), min(b[1], min(lons)),
                 max(b[2], max(lats)), max(b[3], max(lons))
             ]
-    # convert to [[lat_min,lon_min],[lat_max,lon_max]]
     return {d: [[v[0], v[1]], [v[2], v[3]]] for d, v in bounds.items()}
 
 # ── Build Folium map ──────────────────────────────────────────────────────────
@@ -130,7 +261,6 @@ def build_map(df, geojson, district_filter="All Districts", dist_bbox=None):
 
     allowed = dist_acs.get(district_filter) if district_filter != "All Districts" else None
 
-    # Centre/zoom on district if selected
     if district_filter != "All Districts" and dist_bbox:
         start_location = [
             (dist_bbox[0][0] + dist_bbox[1][0]) / 2,
@@ -189,27 +319,14 @@ def build_map(df, geojson, district_filter="All Districts", dist_bbox=None):
               </div>
               <div style='padding:9px 11px;border:1px solid #ddd;
                           border-top:none;border-radius:0 0 6px 6px;background:#fff'>
-                <div style='margin-bottom:3px'>
-                  <b>Winner</b>: {str(row['Leading Candidate']).title()}
-                </div>
-                <div style='margin-bottom:3px'>
-                  <b>Runner-up</b>: {str(row['Trailing Candidate']).title()}
-                </div>
-                <div style='margin-bottom:3px'>
-                  <b>Margin</b>: {margin_str} votes
-                </div>
-                <div style='margin-bottom:3px'>
-                  <b>Category</b>: {row['Margin_Cat']}
-                </div>
-                <div style='margin-bottom:3px'>
-                  <b>District</b>: {dist}
-                </div>
-                <div>
-                  <b>Status</b>:
+                <div style='margin-bottom:3px'><b>Winner</b>: {str(row['Leading Candidate']).title()}</div>
+                <div style='margin-bottom:3px'><b>Runner-up</b>: {str(row['Trailing Candidate']).title()}</div>
+                <div style='margin-bottom:3px'><b>Margin</b>: {margin_str} votes</div>
+                <div style='margin-bottom:3px'><b>Category</b>: {row['Margin_Cat']}</div>
+                <div style='margin-bottom:3px'><b>District</b>: {dist}</div>
+                <div><b>Status</b>:
                   <span style='background:#e8f5e9;color:#2e7d32;padding:1px 6px;
-                               border-radius:3px;font-size:11px;font-weight:600'>
-                    {row['Status']}
-                  </span>
+                               border-radius:3px;font-size:11px;font-weight:600'>{row['Status']}</span>
                 </div>
               </div>
             </div>"""
@@ -231,14 +348,13 @@ def build_map(df, geojson, district_filter="All Districts", dist_bbox=None):
             tooltip=folium.Tooltip(tooltip_text, sticky=False),
         ).add_to(m)
 
-    # Legend — solid background, explicit dark text
     seat_counts = df["Party"].value_counts().to_dict()
     legend_rows = "".join(
         f"""<div style='display:flex;align-items:center;margin-bottom:6px'>
               <div style='width:14px;height:14px;min-width:14px;background:{col};
                           border-radius:3px;margin-right:9px'></div>
               <span style='font-size:12px;color:#111;font-family:Arial,sans-serif'>
-                <b>{p}</b> &nbsp;({seat_counts.get(p, 0)})
+                <b>{p}</b> ({seat_counts.get(p, 0)})
               </span>
             </div>"""
         for p, col in PARTY_COLORS.items() if p != "Other"
@@ -246,8 +362,8 @@ def build_map(df, geojson, district_filter="All Districts", dist_bbox=None):
     legend_html = f"""
     <div style='position:fixed;bottom:40px;right:40px;z-index:9999;
                 background:#ffffff;padding:14px 18px;border-radius:10px;
-                border:1px solid #ccc;
-                box-shadow:0 2px 10px rgba(0,0,0,0.25);font-family:Arial,sans-serif'>
+                border:1px solid #ccc;box-shadow:0 2px 10px rgba(0,0,0,0.25);
+                font-family:Arial,sans-serif'>
       <div style='font-size:13px;font-weight:700;color:#111;margin-bottom:10px'>
         Winning Party
       </div>
@@ -259,24 +375,30 @@ def build_map(df, geojson, district_filter="All Districts", dist_bbox=None):
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 def sidebar(df, geojson, dist_bbox_map):
-    st.sidebar.image(
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Flag_of_West_Bengal.svg/200px-Flag_of_West_Bengal.svg.png",
-        width=110
-    )
-    st.sidebar.title("WB Election 2026")
+    # Logo
+    st.sidebar.markdown("""
+    <div class='logo-container'>
+        <h1 style='color: #FFB74D; font-size: 1.8rem; margin: 0;'>🗳️</h1>
+        <h2 style='color: #e0e0e0; font-size: 1.4rem; margin: 0.3rem 0;'>WB Election</h2>
+        <p style='color: #FF9800; font-size: 1rem; margin: 0; font-weight: 600;'>2026</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     districts = sorted({
         f["properties"].get("dist_name", "Unknown")
         for f in geojson["features"]
         if f["properties"].get("dist_name")
     })
+    
+    st.sidebar.markdown("### Filter by District")
     dist_choice = st.sidebar.selectbox(
-        "Filter by District",
+        "Select District:",
         ["All Districts"] + districts,
-        help="Zoom into a single district"
+        help="Zoom into a single district",
+        label_visibility="collapsed"
     )
 
-    # ── District detail panel ────────────────────────────────────────────────
+    # District detail panel
     if dist_choice != "All Districts":
         dist_map_lookup = {
             clean(f["properties"].get("ac_name", "")): f["properties"].get("dist_name", "")
@@ -288,41 +410,36 @@ def sidebar(df, geojson, dist_bbox_map):
         )
         ddf = ddf[ddf["District"] == dist_choice]
 
-        st.sidebar.markdown("---")
-        st.sidebar.markdown(f"### {dist_choice}")
-        st.sidebar.markdown(f"**{len(ddf)} constituencies**")
+        st.sidebar.markdown(f"""
+        <div class='district-info'>
+            <h3 style='margin: 0 0 0.5rem 0;'>{dist_choice}</h3>
+            <p style='margin: 0; color: #FFB74D; font-weight: 600;'>{len(ddf)} constituencies</p>
+        </div>
+        """, unsafe_allow_html=True)
 
         d_seats = ddf["Party"].value_counts()
         for party, n in d_seats.items():
             col = PARTY_COLORS.get(party, "#757575")
             st.sidebar.markdown(
-                f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px'>"
-                f"<div style='width:12px;height:12px;background:{col};"
-                f"border-radius:2px;flex-shrink:0'></div>"
-                f"<span style='font-size:13px'><b>{party}</b> — {n} seats</span></div>",
+                f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px'>"
+                f"<div style='width:10px;height:10px;background:{col};"
+                f"border-radius:50%;flex-shrink:0'></div>"
+                f"<span style='font-size:13px;color:#e0e0e0'><b>{party}</b> — {n}</span></div>",
                 unsafe_allow_html=True
             )
 
         st.sidebar.markdown("**Closest race:**")
         closest = ddf.nsmallest(1, "Margin").iloc[0]
         st.sidebar.caption(
-            f"{closest['Constituency']}: "
-            f"{closest['Leading Candidate'].title()} ({closest['Party']}) "
-            f"by {int(closest['Margin']):,} votes"
+            f"**{closest['Constituency']}** — {int(closest['Margin']):,} votes"
         )
 
         st.sidebar.markdown("**Biggest win:**")
         biggest = ddf.nlargest(1, "Margin").iloc[0]
         st.sidebar.caption(
-            f"{biggest['Constituency']}: "
-            f"{biggest['Leading Candidate'].title()} ({biggest['Party']}) "
-            f"by {int(biggest['Margin']):,} votes"
+            f"**{biggest['Constituency']}** — {int(biggest['Margin']):,} votes"
         )
 
-        st.sidebar.markdown("**Avg margin:**")
-        st.sidebar.caption(f"{int(ddf['Margin'].mean()):,} votes")
-
-    # ── State-level stats ────────────────────────────────────────────────────
     st.sidebar.markdown("---")
     st.sidebar.markdown("### State Summary")
     seats = df["Party"].value_counts()
@@ -335,29 +452,26 @@ def sidebar(df, geojson, dist_bbox_map):
             continue
         pct = n / total * 100
         st.sidebar.markdown(
-            f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px'>"
-            f"<div style='width:12px;height:12px;background:{col};"
-            f"border-radius:2px;flex-shrink:0'></div>"
-            f"<span style='font-size:13px'><b>{party}</b> {n}"
-            f"<span style='color:#888'> ({pct:.1f}%)</span></span></div>",
+            f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px'>"
+            f"<div style='width:10px;height:10px;background:{col};"
+            f"border-radius:50%;flex-shrink:0'></div>"
+            f"<span style='font-size:13px;color:#e0e0e0'><b>{party}</b> {n} "
+            f"<span style='color:#999'>({pct:.1f}%)</span></span></div>",
             unsafe_allow_html=True
         )
 
-    # ── Footer ───────────────────────────────────────────────────────────────
     st.sidebar.markdown("---")
-    st.sidebar.markdown(
-        "**Last Updated at 04:00 AM On 05/05/2026**"
-    )
+    st.sidebar.markdown("""
+    **Last Updated**\n
+    04:00 AM On 05/05/2026
     
-    st.sidebar.markdown(
-        "**App developed by**\n\n"
-        "[Somdeep Kundu](https://www.somdeepkundu.in), RuDRA Lab, CTARA"
-    )
-
-    st.sidebar.markdown(
-        "**Data Source**\n\n"
-        "[Election Commission of India](https://results.eci.gov.in/ResultAcGenMay2026/partywiseresult-S25.htm)"
-    )
+    **App developed by**\n
+    [Somdeep Kundu](https://www.somdeepkundu.in)\n
+    RuDRA Lab, C-TARA, IIT Bombay
+    
+    **Data Source**\n
+    [Election Commission of India](https://results.eci.gov.in/ResultAcGenMay2026/partywiseresult-S25.htm)
+    """)
 
     return dist_choice
 
@@ -370,30 +484,43 @@ def main():
     dist_choice = sidebar(df, geojson, bbox_map)
     dist_bbox   = bbox_map.get(dist_choice) if dist_choice != "All Districts" else None
 
-    # Header metrics
+    # Header
+    st.markdown("""
+    <div style='text-align: center; margin-bottom: 2rem;'>
+        <h1>West Bengal Assembly Election 2026</h1>
+        <p style='font-size: 1.1rem; color: #666; margin: 0;'>
+            Interactive constituency results with detailed analysis
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Metrics
     seats = df["Party"].value_counts()
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Constituencies", len(df))
-    c2.metric("BJP",  seats.get("BJP",  0))
-    c3.metric("AITC", seats.get("AITC", 0))
-    c4.metric("Others", len(df) - seats.get("BJP", 0) - seats.get("AITC", 0))
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Constituencies", len(df), delta=None)
+    with col2:
+        st.metric("BJP", seats.get("BJP", 0), delta=f"{seats.get('BJP',0)/len(df)*100:.1f}%")
+    with col3:
+        st.metric("AITC", seats.get("AITC", 0), delta=f"{seats.get('AITC',0)/len(df)*100:.1f}%")
+    with col4:
+        other_count = len(df) - seats.get("BJP", 0) - seats.get("AITC", 0)
+        st.metric("Others", other_count, delta=f"{other_count/len(df)*100:.1f}%")
 
     st.markdown("---")
 
     # Map
-    with st.spinner("Rendering map..."):
-        m = build_map(df, geojson,
-                      district_filter=dist_choice,
-                      dist_bbox=dist_bbox)
+    with st.spinner("Rendering interactive map..."):
+        m = build_map(df, geojson, district_filter=dist_choice, dist_bbox=dist_bbox)
 
     st_folium(m, width="100%", height=640, returned_objects=[])
 
     st.caption(
-        "Hover for quick info · Click / tap for full details · "
+        "💡 **Hover** for quick info · **Click/Tap** for full details · "
         f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM}"
     )
 
-    # Results table for selected district
+    # Results table
     if dist_choice != "All Districts":
         dist_map2 = {
             clean(f["properties"].get("ac_name", "")): f["properties"].get("dist_name", "")
@@ -408,8 +535,8 @@ def main():
              "Trailing Candidate", "Margin", "Margin_Cat", "Status"]
         ].sort_values("Margin", ascending=False).reset_index(drop=True)
 
-        with st.expander(f"Full results table — {dist_choice} ({len(show_df)} seats)", expanded=True):
-            st.dataframe(show_df, use_container_width=True)
+        with st.expander(f"📋 Full Results — {dist_choice} ({len(show_df)} seats)", expanded=False):
+            st.dataframe(show_df, use_container_width=True, hide_index=True)
 
 if __name__ == "__main__":
     main()
