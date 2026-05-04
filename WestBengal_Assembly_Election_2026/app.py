@@ -41,7 +41,6 @@ WB_BOUNDS  = [[85.8, 21.4], [89.9, 27.3]]
 WB_CENTER  = [23.4, 87.9]
 MIN_ZOOM   = 7
 MAX_ZOOM   = 12
-FETCH_TIME = datetime.now().strftime("%d %b %Y, %I:%M %p IST")
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Fetching data from GitHub...")
@@ -344,8 +343,21 @@ def sidebar(df, geojson, dist_bbox_map):
             unsafe_allow_html=True
         )
 
+    # ── Footer ───────────────────────────────────────────────────────────────
     st.sidebar.markdown("---")
-    st.sidebar.caption(f"Source: ECA\nLast fetched: {FETCH_TIME}")
+    st.sidebar.markdown(
+        "**Last Updated at 04:00 AM On 05/05/2026**"
+    )
+    
+    st.sidebar.markdown(
+        "**App developed by**\n\n"
+        "[Somdeep Kundu](https://www.somdeepkundu.in), RuDRA Lab, CTARA"
+    )
+
+    st.sidebar.markdown(
+        "**Data Source**\n\n"
+        "[Election Commission of India](https://results.eci.gov.in/ResultAcGenMay2026/partywiseresult-S25.htm)"
+    )
 
     return dist_choice
 
@@ -378,8 +390,7 @@ def main():
 
     st.caption(
         "Hover for quick info · Click / tap for full details · "
-        f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM} · "
-        f"Data: ECA · Fetched: {FETCH_TIME}"
+        f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM}"
     )
 
     # Results table for selected district
