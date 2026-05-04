@@ -367,41 +367,71 @@ def main():
         unsafe_allow_html=True
     )
 
-    # ── Clickable party summary cards ─────────────────────────────────────────
+    # ── Clickable party summary cards — pure CSS 2×2 grid (works on mobile) ───
     seats       = df["Party"].value_counts()
     other_count = len(df) - seats.get("BJP", 0) - seats.get("AITC", 0)
     active      = st.session_state["party_filter"]
 
     CARDS = [
-        ("All",  "All Seats",  294,          "All constituencies", "#607D8B"),
-        ("BJP",  "BJP",        seats.get("BJP",  0), f"{seats.get('BJP', 0)/len(df)*100:.1f}%", "#FF9800"),
-        ("AITC", "AITC",       seats.get("AITC", 0), f"{seats.get('AITC',0)/len(df)*100:.1f}%", "#1E88E5"),
-        ("Others","Others",    other_count,  f"{other_count/len(df)*100:.1f}%",  "#4CAF50"),
+        ("All",   "All Seats", 294,                   "All constituencies",                  "#607D8B"),
+        ("BJP",   "BJP",       seats.get("BJP",  0),  f"{seats.get('BJP', 0)/len(df)*100:.1f}%",  "#FF9800"),
+        ("AITC",  "AITC",      seats.get("AITC", 0),  f"{seats.get('AITC',0)/len(df)*100:.1f}%",  "#1E88E5"),
+        ("Others","Others",    other_count,            f"{other_count/len(df)*100:.1f}%",           "#4CAF50"),
     ]
 
-    cols = st.columns(4)
-    for col_obj, (key, label, value, pct, color) in zip(cols, CARDS):
-        with col_obj:
-            is_active = (active == key)
-            border    = f"3px solid {color}" if is_active else "2px solid #e0e0e0"
-            bg        = "#fff"
-            shadow    = f"0 4px 14px {color}55" if is_active else "0 2px 8px rgba(0,0,0,.07)"
-            st.markdown(
-                "<div style=\"background:" + bg + ";border-radius:12px;padding:14px 16px;"
-                "border-left:5px solid " + color + ";box-shadow:" + shadow + ";"
-                "border:" + border + ";cursor:pointer;transition:all .2s\">"
-                "<div style=\"font-size:11px;color:#888;font-weight:700;"
-                "text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px\">" + label + "</div>"
-                "<div style=\"font-size:clamp(1.4rem,3.5vw,2rem);font-weight:700;"
-                "color:#1a1f3a;line-height:1.1\">" + str(value) + "</div>"
-                "<div style=\"font-size:12px;color:" + color + ";font-weight:600;margin-top:4px\">" + pct + "</div>"
-                "</div>",
-                unsafe_allow_html=True
-            )
-            btn_label = f"{'✓ ' if is_active else ''}{label}"
-            if st.button(btn_label, key=f"btn_{key}", use_container_width=True):
-                st.session_state["party_filter"] = key
-                st.rerun()
+    # Render cards in a CSS grid — never collapses on mobile
+    # Buttons are hidden visually but still functional (Streamlit needs them for state)
+    cards_html = "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;\">"
+    for key, label, value, pct, color in CARDS:
+        is_active = (active == key)
+        outline   = f"3px solid {color}" if is_active else "1.5px solid #e0e0e0"
+        shadow    = f"0 4px 14px {color}44" if is_active else "0 2px 6px rgba(0,0,0,.06)"
+        tick      = "✓ " if is_active else ""
+        cards_html += (
+            f"<div id=\"card_{key}\" style=\"background:white;border-radius:12px;"
+            f"padding:13px 15px;border-left:5px solid {color};outline:{outline};"
+            f"box-shadow:{shadow};cursor:pointer\">"
+            f"<div style=\"font-size:10px;color:#888;font-weight:700;"
+            f"text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px\">{tick}{label}</div>"
+            f"<div style=\"font-size:clamp(1.4rem,5vw,2rem);font-weight:700;"
+            f"color:#1a1f3a;line-height:1\">{value}</div>"
+            f"<div style=\"font-size:12px;color:{color};font-weight:600;margin-top:4px\">{pct}</div>"
+            f"</div>"
+        )
+    cards_html += "</div>"
+    st.markdown(cards_html, unsafe_allow_html=True)
+
+    # Hidden-label buttons — one per card — stacked in a matching 2×2 grid
+    st.markdown(
+        "<style>"
+        # Make the button container sit right under the cards grid
+        ".card-btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}"
+        # Make every button in that grid full-width and compact
+        ".card-btn-grid .stButton>button{width:100%;padding:4px 0;font-size:12px;"
+        "border-radius:8px;opacity:0;height:0;overflow:hidden;pointer-events:none}"
+        "</style>",
+        unsafe_allow_html=True
+    )
+
+    # Overlay transparent full-width buttons on each card using CSS grid
+    st.markdown('<div class="card-btn-grid">', unsafe_allow_html=True)
+    for key, label, value, pct, color in CARDS:
+        if st.button(label, key=f"btn_{key}", use_container_width=True):
+            st.session_state["party_filter"] = key
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Real click: inject JS so clicking the card div triggers the hidden button
+    js = ""
+    for key, label, _, _, _ in CARDS:
+        js += (
+            f"document.getElementById('card_{key}') && "
+            f"document.getElementById('card_{key}').addEventListener('click', function(){{"
+            f"  var btns = window.parent.document.querySelectorAll('button');"
+            f"  for(var b of btns){{ if(b.innerText.trim()==='{label}' || b.innerText.trim()==='✓ {label}'){{ b.click(); break; }} }}"
+            f"}});"
+        )
+    st.components.v1.html(f"<script>{js}</script>", height=0)
 
     st.markdown("---")
 
@@ -420,7 +450,7 @@ def main():
                       party_filter=map_party if pf not in ("All","Others") else pf)
 
     st_folium(m, width="100%", height=620, returned_objects=[])
-    st.caption(f"Hover for quick info · Click/tap for details")
+    st.caption(f"Hover for quick info · Click/tap for details · Zoom locked {MIN_ZOOM}–{MAX_ZOOM}")
 
     # ── Party-filtered results table ──────────────────────────────────────────
     show_df = df.copy()
