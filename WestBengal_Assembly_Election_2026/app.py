@@ -406,35 +406,45 @@ def main():
         [data-testid="stButton"] button[kind="secondary"]:has(+ *),
         div[data-testid="column"] button {{}}
         """
-    # Generic card-button style
+    # Card backgrounds and tints keyed per party
+    CARD_BG = {
+        "All":    "#EEF2F7",
+        "BJP":    "#FFF3E0",
+        "AITC":   "#E3F2FD",
+        "Others": "#E8F5E9",
+    }
+
+    # Global button styles — applied once
     st.markdown("""
     <style>
-    .card-row [data-testid="stColumn"] button {
-        width: 100%;
-        min-height: 90px;
+    /* Force every button in these card columns to render as a styled card */
+    [class*="btn-card-"] button {
+        width: 100% !important;
+        min-height: 80px !important;
         border-radius: 12px !important;
-        border-left-width: 5px !important;
         text-align: left !important;
-        padding: 12px 14px !important;
-        line-height: 1.4 !important;
+        padding: 10px 12px !important;
+        line-height: 1.5 !important;
         white-space: pre-wrap !important;
         font-size: 13px !important;
-        color: #1a1f3a !important;
+        font-weight: 500 !important;
         transition: all .2s !important;
+        border: none !important;
     }
-    .card-row [data-testid="stColumn"] button:hover {
-        transform: translateY(-2px);
-        filter: brightness(.96);
-    }
-    /* Per-card tinted backgrounds */
-    .btn-All    button { background: #EEF2F7 !important; }
-    .btn-BJP    button { background: #FFF3E0 !important; }
-    .btn-AITC   button { background: #E3F2FD !important; }
-    .btn-Others button { background: #E8F5E9 !important; }
+    [class*="btn-card-"] button:hover { filter: brightness(.94) !important; }
+    /* Tinted backgrounds — explicit for each key */
+    .btn-card-All    button { background: #EEF2F7 !important; color: #37474F !important; border-left: 5px solid #607D8B !important; }
+    .btn-card-BJP    button { background: #FFF3E0 !important; color: #E65100 !important; border-left: 5px solid #FF9800 !important; }
+    .btn-card-AITC   button { background: #E3F2FD !important; color: #0D47A1 !important; border-left: 5px solid #1E88E5 !important; }
+    .btn-card-Others button { background: #E8F5E9 !important; color: #1B5E20 !important; border-left: 5px solid #4CAF50 !important; }
+    /* Active glow ring */
+    .active-All    button { box-shadow: 0 0 0 3px #607D8B !important; }
+    .active-BJP    button { box-shadow: 0 0 0 3px #FF9800 !important; }
+    .active-AITC   button { box-shadow: 0 0 0 3px #1E88E5 !important; }
+    .active-Others button { box-shadow: 0 0 0 3px #4CAF50 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="card-row">', unsafe_allow_html=True)
     row1 = st.columns(2)
     row2 = st.columns(2)
     all_cols = [row1[0], row1[1], row2[0], row2[1]]
@@ -443,27 +453,16 @@ def main():
         is_active = (active == key)
         tick      = "✓ " if is_active else ""
         btn_text  = f"{tick}{label}\n{value}\n{pct}"
-        outline   = f"3px solid {color}" if is_active else f"1.5px solid {color}55"
-        shadow    = f"0 6px 18px {color}55" if is_active else f"0 2px 6px {color}22"
-        lw        = "6px" if is_active else "4px"
+        active_cls = f"active-{key}" if is_active else ""
 
         col_obj.markdown(
-            f"<style>.btn-{key} button {{"
-            f"border-left: {lw} solid {color} !important;"
-            f"outline: {outline} !important;"
-            f"box-shadow: {shadow} !important;"
-            f"}}</style>"
-            f'<div class="btn-{key}">',
+            f'<div class="btn-card-{key} {active_cls}">',
             unsafe_allow_html=True
         )
-
         if col_obj.button(btn_text, key=f"btn_{key}", use_container_width=True):
             st.session_state["party_filter"] = key
             st.rerun()
-
         col_obj.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -483,7 +482,6 @@ def main():
 
     st_folium(m, width="100%", height=620, returned_objects=[])
     st.caption(f"Hover for quick info · Click/tap for details")
-    
 
     # ── Party-filtered results table ──────────────────────────────────────────
     show_df = df.copy()
