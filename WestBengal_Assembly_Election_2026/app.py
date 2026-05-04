@@ -194,12 +194,27 @@ def build_map(df, geojson, district_filter="All Districts",
         row = lookup.get(ac_key)
 
         # Dim constituencies not in party filter
-        if party_filter != "All" and row is not None and row["Party"] != party_filter:
+        is_others = (party_filter == "Others")
+        in_others = (row is not None and row["Party"] not in ("BJP", "AITC"))
+        in_single = (row is not None and row["Party"] == party_filter)
+
+        if party_filter not in ("All", "Others") and not in_single:
+            # Single-party filter: dim everything else
             folium.GeoJson(
                 feature,
                 style_function=lambda x: {
                     "fillColor": "#cccccc", "color": "#aaa",
-                    "weight": 0.4, "fillOpacity": 0.25
+                    "weight": 0.4, "fillOpacity": 0.20
+                },
+            ).add_to(m)
+            continue
+        elif is_others and row is not None and not in_others:
+            # Others filter: dim BJP and AITC
+            folium.GeoJson(
+                feature,
+                style_function=lambda x: {
+                    "fillColor": "#cccccc", "color": "#aaa",
+                    "weight": 0.4, "fillOpacity": 0.20
                 },
             ).add_to(m)
             continue
@@ -401,17 +416,21 @@ def main():
         border-left-width: 5px !important;
         text-align: left !important;
         padding: 12px 14px !important;
-        line-height: 1.3 !important;
+        line-height: 1.4 !important;
         white-space: pre-wrap !important;
         font-size: 13px !important;
-        background: white !important;
         color: #1a1f3a !important;
         transition: all .2s !important;
     }
     .card-row [data-testid="stColumn"] button:hover {
-        transform: translateY(-1px);
-        filter: brightness(.97);
+        transform: translateY(-2px);
+        filter: brightness(.96);
     }
+    /* Per-card tinted backgrounds */
+    .btn-All    button { background: #EEF2F7 !important; }
+    .btn-BJP    button { background: #FFF3E0 !important; }
+    .btn-AITC   button { background: #E3F2FD !important; }
+    .btn-Others button { background: #E8F5E9 !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -424,20 +443,19 @@ def main():
         is_active = (active == key)
         tick      = "✓ " if is_active else ""
         btn_text  = f"{tick}{label}\n{value}\n{pct}"
-        outline   = f"3px solid {color}" if is_active else f"1.5px solid {color}44"
-        shadow    = f"0 4px 14px {color}44" if is_active else "0 2px 6px rgba(0,0,0,.06)"
+        outline   = f"3px solid {color}" if is_active else f"1.5px solid {color}55"
+        shadow    = f"0 6px 18px {color}55" if is_active else f"0 2px 6px {color}22"
+        lw        = "6px" if is_active else "4px"
 
-        # Per-button style injected via unique wrapper
-        col_obj.markdown(f"""
-        <style>
-        .btn-{key} button {{
-            border-left: 5px solid {color} !important;
-            outline: {outline} !important;
-            box-shadow: {shadow} !important;
-        }}
-        </style>
-        <div class="btn-{key}">
-        """, unsafe_allow_html=True)
+        col_obj.markdown(
+            f"<style>.btn-{key} button {{"
+            f"border-left: {lw} solid {color} !important;"
+            f"outline: {outline} !important;"
+            f"box-shadow: {shadow} !important;"
+            f"}}</style>"
+            f'<div class="btn-{key}">',
+            unsafe_allow_html=True
+        )
 
         if col_obj.button(btn_text, key=f"btn_{key}", use_container_width=True):
             st.session_state["party_filter"] = key
@@ -464,7 +482,8 @@ def main():
                       party_filter=map_party if pf not in ("All","Others") else pf)
 
     st_folium(m, width="100%", height=620, returned_objects=[])
-    st.caption(f"Hover for quick info · Click/tap for details · Zoom locked {MIN_ZOOM}–{MAX_ZOOM}")
+    st.caption(f"Hover for quick info · Click/tap for details")
+    
 
     # ── Party-filtered results table ──────────────────────────────────────────
     show_df = df.copy()
