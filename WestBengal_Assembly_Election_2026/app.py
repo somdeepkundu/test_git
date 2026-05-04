@@ -510,26 +510,46 @@ def main():
 
     # Header
     st.markdown("""
-    <div style='text-align: center; margin-bottom: 2rem;'>
-        <h1>West Bengal Assembly Election 2026</h1>
-        <p style='font-size: 1.1rem; color: #666; margin: 0;'>
+    <div style='text-align:center;margin-bottom:1.2rem;'>
+        <h1 style='font-size:clamp(1.4rem,4vw,2.2rem);margin-bottom:0.3rem'>
+            West Bengal Assembly Election 2026
+        </h1>
+        <p style='font-size:clamp(0.85rem,2.5vw,1.1rem);color:#666;margin:0;'>
             Interactive constituency results with detailed analysis
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Metrics
+    # Metrics — 2x2 grid, works on mobile and desktop
     seats = df["Party"].value_counts()
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Total Constituencies", len(df), delta=None)
-    with col2:
-        st.metric("BJP", seats.get("BJP", 0), delta=f"{seats.get('BJP',0)/len(df)*100:.1f}%")
-    with col3:
-        st.metric("AITC", seats.get("AITC", 0), delta=f"{seats.get('AITC',0)/len(df)*100:.1f}%")
-    with col4:
-        other_count = len(df) - seats.get("BJP", 0) - seats.get("AITC", 0)
-        st.metric("Others", other_count, delta=f"{other_count/len(df)*100:.1f}%")
+    other_count = len(df) - seats.get("BJP", 0) - seats.get("AITC", 0)
+
+    def card(label, value, pct, border_color):
+        return f"""
+        <div style='background:white;border-radius:10px;padding:14px 16px;
+                    border-left:4px solid {border_color};
+                    box-shadow:0 2px 8px rgba(0,0,0,0.08);'>
+            <div style='font-size:11px;color:#888;font-weight:600;
+                        text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px'>
+                {label}
+            </div>
+            <div style='font-size:clamp(1.6rem,5vw,2.2rem);font-weight:700;
+                        color:#1a1f3a;line-height:1.1'>
+                {value}
+            </div>
+            <div style='font-size:12px;color:{border_color};font-weight:600;margin-top:4px'>
+                {pct}
+            </div>
+        </div>"""
+
+    st.markdown(f"""
+    <div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.2rem;'>
+        {card("Total Seats", 294, "All constituencies", "#607D8B")}
+        {card("BJP", seats.get("BJP", 0), f"{seats.get('BJP',0)/len(df)*100:.1f}%", "#FF9800")}
+        {card("AITC", seats.get("AITC", 0), f"{seats.get('AITC',0)/len(df)*100:.1f}%", "#1E88E5")}
+        {card("Others", other_count, f"{other_count/len(df)*100:.1f}%", "#4CAF50")}
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -541,7 +561,7 @@ def main():
 
     st.caption(
         "💡 **Hover** for quick info · **Click/Tap** for full details · "
-        #f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM}"
+        f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM}"
     )
 
     # Results table
