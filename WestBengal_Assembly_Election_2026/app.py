@@ -356,7 +356,7 @@ def sidebar(df, geojson, dist_bbox_map):
     st.sidebar.markdown("---")
     st.sidebar.markdown(
         "**Last Updated**  \n04:00 AM On 05/05/2026\n\n"
-        "**App developed by**  \n[Somdeep Kundu](https://www.somdeepkundu.in)  \nRuDRA Lab, CTARA\n\n"
+        "**App developed by**  \n[Somdeep Kundu](https://www.somdeepkundu.in)  \nRuDRA Lab, C-TARA, IIT Bombay\n\n"
         "**Data Source**  \n[Election Commission of India]"
         "(https://results.eci.gov.in/ResultAcGenMay2026/partywiseresult-S25.htm)"
     )
