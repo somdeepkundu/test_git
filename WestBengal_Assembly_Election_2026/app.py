@@ -563,7 +563,7 @@ def main():
     st_folium(m, width="100%", height=640, returned_objects=[])
 
     st.caption(
-        "💡 **Hover** for quick info · **Click/Tap** for full details · "
+        "💡 **Hover** for quick info · **Click/Tap** for full details "
        # f"Zoom locked {MIN_ZOOM}–{MAX_ZOOM}"
     )
 
