@@ -367,71 +367,85 @@ def main():
         unsafe_allow_html=True
     )
 
-    # ── Clickable party summary cards — pure CSS 2×2 grid (works on mobile) ───
+    # ── Party filter cards — styled buttons in a 2×2 grid ──────────────────
     seats       = df["Party"].value_counts()
     other_count = len(df) - seats.get("BJP", 0) - seats.get("AITC", 0)
     active      = st.session_state["party_filter"]
 
     CARDS = [
-        ("All",   "All Seats", 294,                   "All constituencies",                  "#607D8B"),
-        ("BJP",   "BJP",       seats.get("BJP",  0),  f"{seats.get('BJP', 0)/len(df)*100:.1f}%",  "#FF9800"),
-        ("AITC",  "AITC",      seats.get("AITC", 0),  f"{seats.get('AITC',0)/len(df)*100:.1f}%",  "#1E88E5"),
-        ("Others","Others",    other_count,            f"{other_count/len(df)*100:.1f}%",           "#4CAF50"),
+        ("All",   "ALL SEATS", 294,                  "All constituencies",                 "#607D8B"),
+        ("BJP",   "BJP",       seats.get("BJP",  0), f"{seats.get('BJP', 0)/len(df)*100:.1f}%", "#FF9800"),
+        ("AITC",  "AITC",      seats.get("AITC", 0), f"{seats.get('AITC',0)/len(df)*100:.1f}%", "#1E88E5"),
+        ("Others","OTHERS",    other_count,           f"{other_count/len(df)*100:.1f}%",           "#4CAF50"),
     ]
 
-    # Render cards in a CSS grid — never collapses on mobile
-    # Buttons are hidden visually but still functional (Streamlit needs them for state)
-    cards_html = "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;\">"
+    # Inject CSS: style every button to look like a card
+    btn_styles = ""
     for key, label, value, pct, color in CARDS:
         is_active = (active == key)
-        outline   = f"3px solid {color}" if is_active else "1.5px solid #e0e0e0"
+        outline   = f"3px solid {color}" if is_active else f"1.5px solid {color}55"
         shadow    = f"0 4px 14px {color}44" if is_active else "0 2px 6px rgba(0,0,0,.06)"
+        tick      = "✓  " if is_active else ""
+        # Each button gets a unique data-testid via its key
+        btn_styles += f"""
+        [data-testid="stButton"] button[kind="secondary"]:has(+ *),
+        div[data-testid="column"] button {{}}
+        """
+    # Generic card-button style
+    st.markdown("""
+    <style>
+    .card-row [data-testid="stColumn"] button {
+        width: 100%;
+        min-height: 90px;
+        border-radius: 12px !important;
+        border-left-width: 5px !important;
+        text-align: left !important;
+        padding: 12px 14px !important;
+        line-height: 1.3 !important;
+        white-space: pre-wrap !important;
+        font-size: 13px !important;
+        background: white !important;
+        color: #1a1f3a !important;
+        transition: all .2s !important;
+    }
+    .card-row [data-testid="stColumn"] button:hover {
+        transform: translateY(-1px);
+        filter: brightness(.97);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="card-row">', unsafe_allow_html=True)
+    row1 = st.columns(2)
+    row2 = st.columns(2)
+    all_cols = [row1[0], row1[1], row2[0], row2[1]]
+
+    for col_obj, (key, label, value, pct, color) in zip(all_cols, CARDS):
+        is_active = (active == key)
         tick      = "✓ " if is_active else ""
-        cards_html += (
-            f"<div id=\"card_{key}\" style=\"background:white;border-radius:12px;"
-            f"padding:13px 15px;border-left:5px solid {color};outline:{outline};"
-            f"box-shadow:{shadow};cursor:pointer\">"
-            f"<div style=\"font-size:10px;color:#888;font-weight:700;"
-            f"text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px\">{tick}{label}</div>"
-            f"<div style=\"font-size:clamp(1.4rem,5vw,2rem);font-weight:700;"
-            f"color:#1a1f3a;line-height:1\">{value}</div>"
-            f"<div style=\"font-size:12px;color:{color};font-weight:600;margin-top:4px\">{pct}</div>"
-            f"</div>"
-        )
-    cards_html += "</div>"
-    st.markdown(cards_html, unsafe_allow_html=True)
+        btn_text  = f"{tick}{label}\n{value}\n{pct}"
+        outline   = f"3px solid {color}" if is_active else f"1.5px solid {color}44"
+        shadow    = f"0 4px 14px {color}44" if is_active else "0 2px 6px rgba(0,0,0,.06)"
 
-    # Hidden-label buttons — one per card — stacked in a matching 2×2 grid
-    st.markdown(
-        "<style>"
-        # Make the button container sit right under the cards grid
-        ".card-btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}"
-        # Make every button in that grid full-width and compact
-        ".card-btn-grid .stButton>button{width:100%;padding:4px 0;font-size:12px;"
-        "border-radius:8px;opacity:0;height:0;overflow:hidden;pointer-events:none}"
-        "</style>",
-        unsafe_allow_html=True
-    )
+        # Per-button style injected via unique wrapper
+        col_obj.markdown(f"""
+        <style>
+        .btn-{key} button {{
+            border-left: 5px solid {color} !important;
+            outline: {outline} !important;
+            box-shadow: {shadow} !important;
+        }}
+        </style>
+        <div class="btn-{key}">
+        """, unsafe_allow_html=True)
 
-    # Overlay transparent full-width buttons on each card using CSS grid
-    st.markdown('<div class="card-btn-grid">', unsafe_allow_html=True)
-    for key, label, value, pct, color in CARDS:
-        if st.button(label, key=f"btn_{key}", use_container_width=True):
+        if col_obj.button(btn_text, key=f"btn_{key}", use_container_width=True):
             st.session_state["party_filter"] = key
             st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
-    # Real click: inject JS so clicking the card div triggers the hidden button
-    js = ""
-    for key, label, _, _, _ in CARDS:
-        js += (
-            f"document.getElementById('card_{key}') && "
-            f"document.getElementById('card_{key}').addEventListener('click', function(){{"
-            f"  var btns = window.parent.document.querySelectorAll('button');"
-            f"  for(var b of btns){{ if(b.innerText.trim()==='{label}' || b.innerText.trim()==='✓ {label}'){{ b.click(); break; }} }}"
-            f"}});"
-        )
-    st.components.v1.html(f"<script>{js}</script>", height=0)
+        col_obj.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("---")
 
