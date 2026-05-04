@@ -524,32 +524,35 @@ def main():
     seats = df["Party"].value_counts()
     other_count = len(df) - seats.get("BJP", 0) - seats.get("AITC", 0)
 
-    def card(label, value, pct, border_color):
-        return f"""
-        <div style='background:white;border-radius:10px;padding:14px 16px;
-                    border-left:4px solid {border_color};
-                    box-shadow:0 2px 8px rgba(0,0,0,0.08);'>
-            <div style='font-size:11px;color:#888;font-weight:600;
-                        text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px'>
-                {label}
-            </div>
-            <div style='font-size:clamp(1.6rem,5vw,2.2rem);font-weight:700;
-                        color:#1a1f3a;line-height:1.1'>
-                {value}
-            </div>
-            <div style='font-size:12px;color:{border_color};font-weight:600;margin-top:4px'>
-                {pct}
-            </div>
-        </div>"""
+    bjp_n    = seats.get("BJP",  0)
+    aitc_n   = seats.get("AITC", 0)
+    bjp_pct  = f"{bjp_n  / len(df) * 100:.1f}%"
+    aitc_pct = f"{aitc_n / len(df) * 100:.1f}%"
+    oth_pct  = f"{other_count / len(df) * 100:.1f}%"
 
-    st.markdown(f"""
-    <div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.2rem;'>
-        {card("Total Seats", 294, "All constituencies", "#607D8B")}
-        {card("BJP", seats.get("BJP", 0), f"{seats.get('BJP',0)/len(df)*100:.1f}%", "#FF9800")}
-        {card("AITC", seats.get("AITC", 0), f"{seats.get('AITC',0)/len(df)*100:.1f}%", "#1E88E5")}
-        {card("Others", other_count, f"{other_count/len(df)*100:.1f}%", "#4CAF50")}
-    </div>
-    """, unsafe_allow_html=True)
+    def make_card(label, value, pct, color):
+        return (
+            "<div style=\"background:white;border-radius:10px;padding:14px 16px;"
+            "border-left:4px solid " + color + ";"
+            "box-shadow:0 2px 8px rgba(0,0,0,0.08)\">"
+            "<div style=\"font-size:11px;color:#888;font-weight:600;"
+            "text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px\">"
+            + label +
+            "</div><div style=\"font-size:clamp(1.4rem,4vw,2rem);font-weight:700;"
+            "color:#1a1f3a;line-height:1.1\">" + str(value) +
+            "</div><div style=\"font-size:12px;color:" + color + ";font-weight:600;margin-top:4px\">"
+            + pct + "</div></div>"
+        )
+
+    grid = (
+        "<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.2rem;\">"
+        + make_card("Total Seats", 294,      "All constituencies", "#607D8B")
+        + make_card("BJP",         bjp_n,    bjp_pct,              "#FF9800")
+        + make_card("AITC",        aitc_n,   aitc_pct,             "#1E88E5")
+        + make_card("Others",      other_count, oth_pct,           "#4CAF50")
+        + "</div>"
+    )
+    st.markdown(grid, unsafe_allow_html=True)
 
     st.markdown("---")
 
