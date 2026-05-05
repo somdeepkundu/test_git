@@ -148,7 +148,7 @@ def district_bounds(geojson):
 
 # ── Map builder ───────────────────────────────────────────────────────────────
 def build_map(df, geojson, district_filter="All Districts",
-              dist_bbox=None, party_filter="All"):
+              dist_bbox=None, party_filter="All", legend_df=None):
 
     lookup = {clean(r["Constituency"]): r for _, r in df.iterrows()}
 
@@ -264,24 +264,30 @@ def build_map(df, geojson, district_filter="All Districts",
             tooltip=folium.Tooltip(tooltip_text, sticky=False),
         ).add_to(m)
 
-    # Legend
-    seat_counts = df["Party"].value_counts().to_dict()
+    # Legend — dynamic: uses district-filtered df if provided
+    leg_df      = legend_df if legend_df is not None else df
+    seat_counts = leg_df["Party"].value_counts().to_dict()
+    dist_label  = f" — {district_filter}" if district_filter != "All Districts" else ""
+
     legend_rows = "".join(
         "<div style=\"display:flex;align-items:center;margin-bottom:6px\">"
         "<div style=\"width:14px;height:14px;min-width:14px;background:" + col + ";"
         "border-radius:3px;margin-right:9px\"></div>"
         "<span style=\"font-size:12px;color:#111;font-family:Arial,sans-serif\">"
-        "<b>" + p + "</b> (" + str(seat_counts.get(p,0)) + ")"
+        "<b>" + p + "</b> (" + str(n) + ")"
         "</span></div>"
-        for p, col in PARTY_COLORS.items() if p != "Other"
+        for p, col in PARTY_COLORS.items()
+        if p != "Other" and (n := seat_counts.get(p, 0)) > 0
     )
     m.get_root().html.add_child(folium.Element(
         "<div style=\"position:fixed;bottom:40px;right:40px;z-index:9999;"
         "background:#ffffff;padding:14px 18px;border-radius:10px;"
         "border:1px solid #ccc;box-shadow:0 2px 10px rgba(0,0,0,.25);"
-        "font-family:Arial,sans-serif\">"
-        "<div style=\"font-size:13px;font-weight:700;color:#111;margin-bottom:10px\">"
-        "Winning Party</div>" + legend_rows + "</div>"
+        "font-family:Arial,sans-serif;min-width:160px\">"
+        "<div style=\"font-size:13px;font-weight:700;color:#111;margin-bottom:2px\">"
+        "Winning Party</div>"
+        "<div style=\"font-size:10px;color:#888;margin-bottom:10px\">" + dist_label.strip(" — ") + "</div>"
+        + legend_rows + "</div>"
     ))
 
     return m
@@ -356,7 +362,7 @@ def sidebar(df, geojson, dist_bbox_map):
     st.sidebar.markdown("---")
     st.sidebar.markdown(
         "**Last Updated**  \n04:00 AM On 05/05/2026\n\n"
-        "**App developed by**  \n[Somdeep Kundu](https://www.somdeepkundu.in)  \nRuDRA Lab, C-TARA, IIT Bombay\n\n"
+        "**App developed by**  \n[Somdeep Kundu](https://www.somdeepkundu.in)  \nRuDRA Lab, CTARA\n\n"
         "**Data Source**  \n[Election Commission of India]"
         "(https://results.eci.gov.in/ResultAcGenMay2026/partywiseresult-S25.htm)"
     )
@@ -474,14 +480,27 @@ def main():
     # For "Others", build list of other parties
     other_parties = [p for p in df["Party"].unique() if p not in ("BJP","AITC")]
 
+    # Build legend_df: filter to district (and party if active)
+    dlookup_leg = {clean(f["properties"].get("ac_name","")): f["properties"].get("dist_name","")
+                   for f in geojson["features"]}
+    legend_df = df.copy()
+    legend_df["District"] = legend_df["Constituency"].apply(lambda x: dlookup_leg.get(clean(x),"Unknown"))
+    if dist_choice != "All Districts":
+        legend_df = legend_df[legend_df["District"] == dist_choice]
+    if pf == "Others":
+        legend_df = legend_df[~legend_df["Party"].isin(["BJP","AITC"])]
+    elif pf != "All":
+        legend_df = legend_df[legend_df["Party"] == pf]
+
     with st.spinner("Rendering map..."):
         m = build_map(df, geojson,
                       district_filter=dist_choice,
                       dist_bbox=dist_bbox,
-                      party_filter=map_party if pf not in ("All","Others") else pf)
+                      party_filter=map_party if pf not in ("All","Others") else pf,
+                      legend_df=legend_df)
 
     st_folium(m, width="100%", height=620, returned_objects=[])
-    st.caption(f"Hover for quick info · Click/tap for details")
+    st.caption(f"Hover for quick info · Click/tap for details · Zoom locked {MIN_ZOOM}–{MAX_ZOOM}")
 
     # ── Party-filtered results table ──────────────────────────────────────────
     show_df = df.copy()
