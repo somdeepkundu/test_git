@@ -412,65 +412,70 @@ def main():
         [data-testid="stButton"] button[kind="secondary"]:has(+ *),
         div[data-testid="column"] button {{}}
         """
-    # Card backgrounds and tints keyed per party
-    CARD_BG = {
-        "All":    "#EEF2F7",
-        "BJP":    "#FFF3E0",
-        "AITC":   "#E3F2FD",
-        "Others": "#E8F5E9",
-    }
-
-    # Global button styles — applied once
+    # ── Compact pill filter bar — glued above map ───────────────────────────────
     st.markdown("""
     <style>
-    /* Force every button in these card columns to render as a styled card */
-    [class*="btn-card-"] button {
+    .pill-All button, .pill-BJP button, .pill-AITC button, .pill-Others button {
+        padding: 5px 10px !important;
+        border-radius: 999px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        white-space: nowrap !important;
+        height: 34px !important;
+        min-height: unset !important;
         width: 100% !important;
-        min-height: 80px !important;
-        border-radius: 12px !important;
-        text-align: left !important;
-        padding: 10px 12px !important;
-        line-height: 1.5 !important;
-        white-space: pre-wrap !important;
-        font-size: 13px !important;
-        font-weight: 500 !important;
-        transition: all .2s !important;
-        border: none !important;
+        border: 2px solid transparent !important;
+        transition: all .15s ease !important;
+        letter-spacing: .3px !important;
     }
-    [class*="btn-card-"] button:hover { filter: brightness(.94) !important; }
-    /* Tinted backgrounds — explicit for each key */
-    .btn-card-All    button { background: #EEF2F7 !important; color: #37474F !important; border-left: 5px solid #607D8B !important; }
-    .btn-card-BJP    button { background: #FFF3E0 !important; color: #E65100 !important; border-left: 5px solid #FF9800 !important; }
-    .btn-card-AITC   button { background: #E3F2FD !important; color: #0D47A1 !important; border-left: 5px solid #1E88E5 !important; }
-    .btn-card-Others button { background: #E8F5E9 !important; color: #1B5E20 !important; border-left: 5px solid #4CAF50 !important; }
-    /* Active glow ring */
-    .active-All    button { box-shadow: 0 0 0 3px #607D8B !important; }
-    .active-BJP    button { box-shadow: 0 0 0 3px #FF9800 !important; }
-    .active-AITC   button { box-shadow: 0 0 0 3px #1E88E5 !important; }
-    .active-Others button { box-shadow: 0 0 0 3px #4CAF50 !important; }
+    .pill-All    button { background:#2e3557 !important; color:#aab4d4 !important; border-color:#3d4570 !important; }
+    .pill-BJP    button { background:#3d2800 !important; color:#FFB74D !important; border-color:#FF9800 !important; }
+    .pill-AITC   button { background:#0a1e3d !important; color:#64B5F6 !important; border-color:#1E88E5 !important; }
+    .pill-Others button { background:#0d2b12 !important; color:#81C784 !important; border-color:#4CAF50 !important; }
+    .pill-All    button:hover { background:#3a4168 !important; color:#fff !important; }
+    .pill-BJP    button:hover { background:#7a4f00 !important; color:#fff !important; }
+    .pill-AITC   button:hover { background:#0d3065 !important; color:#fff !important; }
+    .pill-Others button:hover { background:#1a4d1f !important; color:#fff !important; }
+    .pill-active-All    button { background:#607D8B !important; color:#fff !important; box-shadow:0 0 0 3px #90A4AE !important; }
+    .pill-active-BJP    button { background:#FF9800 !important; color:#1a1200 !important; box-shadow:0 0 0 3px #FFD54F !important; }
+    .pill-active-AITC   button { background:#1E88E5 !important; color:#fff !important; box-shadow:0 0 0 3px #90CAF9 !important; }
+    .pill-active-Others button { background:#4CAF50 !important; color:#fff !important; box-shadow:0 0 0 3px #A5D6A7 !important; }
+    /* pill bar header row */
+    .pill-header {
+        display: flex; align-items: center; justify-content: space-between;
+        background: linear-gradient(135deg,#1a1f3a 0%,#16213e 100%);
+        border-radius: 12px 12px 0 0;
+        padding: 8px 14px 6px 14px;
+        margin-bottom: 0;
+    }
+    .pill-header-title { color:#aab4d4; font-size:11px; font-weight:700;
+                         letter-spacing:1px; text-transform:uppercase; }
     </style>
     """, unsafe_allow_html=True)
 
-    row1 = st.columns(2)
-    row2 = st.columns(2)
-    all_cols = [row1[0], row1[1], row2[0], row2[1]]
+    # Dark header bar
+    filter_label = f"Filter: {active}" if active != "All" else "Filter by party"
+    st.markdown(
+        f'<div class="pill-header">'
+        f'<span class="pill-header-title">Filter by Party</span>'
+        f'<span style="color:#FF9800;font-size:11px;font-weight:700">{filter_label}</span>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
-    for col_obj, (key, label, value, pct, color) in zip(all_cols, CARDS):
-        is_active = (active == key)
-        tick      = "✓ " if is_active else ""
-        btn_text  = f"{tick}{label}\n{value}\n{pct}"
-        active_cls = f"active-{key}" if is_active else ""
-
-        col_obj.markdown(
-            f'<div class="btn-card-{key} {active_cls}">',
-            unsafe_allow_html=True
-        )
+    # 4 pill buttons in one row
+    pill_cols = st.columns(4)
+    for col_obj, (key, label, value, pct, color) in zip(pill_cols, CARDS):
+        is_active  = (active == key)
+        tick       = "✓" if is_active else ""
+        btn_text   = f"{tick}{label} {value}"
+        active_cls = f"pill-active-{key}" if is_active else ""
+        col_obj.markdown(f'<div class="pill-{key} {active_cls}">', unsafe_allow_html=True)
         if col_obj.button(btn_text, key=f"btn_{key}", use_container_width=True):
             st.session_state["party_filter"] = key
             st.rerun()
         col_obj.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("---")
 
     # ── Map ───────────────────────────────────────────────────────────────────
     pf = st.session_state["party_filter"]
@@ -499,8 +504,10 @@ def main():
                       party_filter=map_party if pf not in ("All","Others") else pf,
                       legend_df=legend_df)
 
-    st_folium(m, width="100%", height=620, returned_objects=[])
-    st.caption(f"Hover for quick info · Click/tap for details · This app is purely experimental and under development, so if there are data inconsistencies from developers side, that's my fault, not ECIs.")
+    st.markdown("<div style=\"border-radius:0 0 12px 12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.18)\">", unsafe_allow_html=True)
+    st_folium(m, width="100%", height=600, returned_objects=[])
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.caption(f"Hover for quick info · Tap for details · Zoom {MIN_ZOOM}–{MAX_ZOOM}")
 
     # ── Party-filtered results table ──────────────────────────────────────────
     show_df = df.copy()
