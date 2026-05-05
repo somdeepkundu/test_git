@@ -399,18 +399,6 @@ def main():
         ("Others","OTHERS",    other_count,           f"{other_count/len(df)*100:.1f}%",           "#4CAF50"),
     ]
 
-    # Inject CSS: style every button to look like a card
-    btn_styles = ""
-    for key, label, value, pct, color in CARDS:
-        is_active = (active == key)
-        outline   = f"3px solid {color}" if is_active else f"1.5px solid {color}55"
-        shadow    = f"0 4px 14px {color}44" if is_active else "0 2px 6px rgba(0,0,0,.06)"
-        tick      = "✓  " if is_active else ""
-        # Each button gets a unique data-testid via its key
-        btn_styles += f"""
-        [data-testid="stButton"] button[kind="secondary"]:has(+ *),
-        div[data-testid="column"] button {{}}
-        """
     # ── Pill bar: HTML pills set query_params, no hidden buttons needed ─────────
     # Read filter from query params (set by pill click via JS)
     qp = st.query_params.get("pf", "All")
@@ -529,4 +517,4 @@ def main():
         st.dataframe(show_df, use_container_width=True, hide_index=True)
 
 if __name__ == "__main__":
-    main() 
+    main()
