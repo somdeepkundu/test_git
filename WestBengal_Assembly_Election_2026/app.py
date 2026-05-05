@@ -504,7 +504,8 @@ def main():
     st.markdown("<div style=\"border-radius:0 0 12px 12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.18)\">", unsafe_allow_html=True)
     st_folium(m, width="100%", height=600, returned_objects=[])
     st.markdown("</div>", unsafe_allow_html=True)
-    st.caption(f"Hover for quick info · Tap for details · Zoom {MIN_ZOOM}–{MAX_ZOOM}")
+    # st.caption(f"Hover for quick info · Tap for details · Zoom {MIN_ZOOM}–{MAX_ZOOM}")
+    st.caption(f"Hover for quick info · Click/tap for details · This app is purely experimental and under development, so if there are data inconsistencies from developers side, that's my fault, not ECIs.")
 
     # ── Party-filtered results table ──────────────────────────────────────────
     show_df = df.copy()
