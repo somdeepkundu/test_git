@@ -399,53 +399,78 @@ def main():
         ("Others","OTHERS",    other_count,           f"{other_count/len(df)*100:.1f}%",           "#4CAF50"),
     ]
 
-    # ── Pill bar: HTML pills set query_params, no hidden buttons needed ─────────
-    # Read filter from query params (set by pill click via JS)
-    qp = st.query_params.get("pf", "All")
-    if qp in ("All","BJP","AITC","Others") and qp != st.session_state["party_filter"]:
-        st.session_state["party_filter"] = qp
-    active = st.session_state["party_filter"]
+    # ── Pill filter bar — st.radio styled as pills (reliable on all devices) ────
+    seats_bjp  = seats.get("BJP",  0)
+    seats_aitc = seats.get("AITC", 0)
 
-    PILL_STYLE = {
-        "All":    {"bg":"#2e3557","col":"#aab4d4","bdr":"#3d4570","abg":"#607D8B","acol":"#fff","aglow":"#90A4AE"},
-        "BJP":    {"bg":"#3d2800","col":"#FFB74D","bdr":"#FF9800","abg":"#FF9800","acol":"#1a1200","aglow":"#FFD54F"},
-        "AITC":   {"bg":"#0a1e3d","col":"#64B5F6","bdr":"#1E88E5","abg":"#1E88E5","acol":"#fff","aglow":"#90CAF9"},
-        "Others": {"bg":"#0d2b12","col":"#81C784","bdr":"#4CAF50","abg":"#4CAF50","acol":"#fff","aglow":"#A5D6A7"},
+    # Radio options with counts embedded
+    radio_opts = [
+        f"All  {len(df)}",
+        f"BJP  {seats_bjp}",
+        f"AITC  {seats_aitc}",
+        f"Others  {other_count}",
+    ]
+    KEY_MAP = {
+        f"All  {len(df)}":          "All",
+        f"BJP  {seats_bjp}":        "BJP",
+        f"AITC  {seats_aitc}":      "AITC",
+        f"Others  {other_count}":   "Others",
     }
+    RKEY_MAP = {v: k for k, v in KEY_MAP.items()}
 
-    pills = ""
-    for key, label, value, pct, color in CARDS:
-        s = PILL_STYLE[key]
-        is_active = (active == key)
-        bg  = s["abg"]  if is_active else s["bg"]
-        col = s["acol"] if is_active else s["col"]
-        bdr = s["aglow"] if is_active else s["bdr"]
-        shadow = f"0 0 0 3px {s['aglow']}" if is_active else "none"
-        tick = "✓ " if is_active else ""
-        pills += (
-            f"<button onclick=\"setPF(\'{key}\')\" style=\""
-            f"background:{bg};color:{col};border:2px solid {bdr};"
-            f"border-radius:999px;padding:6px 16px;font-size:12px;font-weight:700;"
-            f"white-space:nowrap;cursor:pointer;transition:all .15s;box-shadow:{shadow};"
-            f"height:36px;flex-shrink:0;font-family:inherit;letter-spacing:.3px;\">"
-            f"{tick}{label} {value}</button>"
-        )
+    # Style radio as a horizontal pill bar
+    st.markdown("""
+    <style>
+    /* Hide default radio circle */
+    div[data-testid="stRadio"] > div { flex-direction:row !important; flex-wrap:nowrap !important;
+        gap:6px !important; overflow-x:auto !important;
+        background:linear-gradient(135deg,#1a1f3a 0%,#16213e 100%) !important;
+        border-radius:12px 12px 0 0 !important;
+        padding:10px 12px 8px 12px !important;
+        scrollbar-width:none !important; }
+    div[data-testid="stRadio"] > div::-webkit-scrollbar { display:none !important; }
+    div[data-testid="stRadio"] label {
+        border-radius:999px !important;
+        padding:5px 14px !important;
+        cursor:pointer !important;
+        font-size:12px !important;
+        font-weight:700 !important;
+        letter-spacing:.3px !important;
+        white-space:nowrap !important;
+        transition:all .15s !important;
+        margin:0 !important;
+    }
+    /* Hide the actual radio dot */
+    div[data-testid="stRadio"] label span:first-child { display:none !important; }
+    /* Unselected states per option position */
+    div[data-testid="stRadio"] label:nth-child(1) { background:#2e3557 !important; color:#aab4d4 !important; border:2px solid #3d4570 !important; }
+    div[data-testid="stRadio"] label:nth-child(2) { background:#3d2800 !important; color:#FFB74D !important; border:2px solid #FF9800 !important; }
+    div[data-testid="stRadio"] label:nth-child(3) { background:#0a1e3d !important; color:#64B5F6 !important; border:2px solid #1E88E5 !important; }
+    div[data-testid="stRadio"] label:nth-child(4) { background:#0d2b12 !important; color:#81C784 !important; border:2px solid #4CAF50 !important; }
+    /* Selected states */
+    div[data-testid="stRadio"] label:nth-child(1)[data-baseweb="radio"] span,
+    div[data-testid="stRadio"] label:nth-child(1):has(input:checked) { background:#607D8B !important; color:#fff !important; box-shadow:0 0 0 3px #90A4AE !important; }
+    div[data-testid="stRadio"] label:nth-child(2):has(input:checked) { background:#FF9800 !important; color:#1a1200 !important; box-shadow:0 0 0 3px #FFD54F !important; }
+    div[data-testid="stRadio"] label:nth-child(3):has(input:checked) { background:#1E88E5 !important; color:#fff !important; box-shadow:0 0 0 3px #90CAF9 !important; }
+    div[data-testid="stRadio"] label:nth-child(4):has(input:checked) { background:#4CAF50 !important; color:#fff !important; box-shadow:0 0 0 3px #A5D6A7 !important; }
+    /* Hide the radio label above */
+    div[data-testid="stRadio"] > label { display:none !important; }
+    </style>
+    """, unsafe_allow_html=True)
 
-    bar_html = (
-        "<div style=\"display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;"
-        "background:linear-gradient(135deg,#1a1f3a 0%,#16213e 100%);"
-        "border-radius:12px 12px 0 0;padding:10px 14px 8px 14px;"
-        "scrollbar-width:none;-webkit-overflow-scrolling:touch;\">"
-        + pills + "</div>"
-        "<script>"
-        "function setPF(key){"
-        "  var u=new URL(window.location.href);"
-        "  u.searchParams.set('pf',key);"
-        "  window.location.href=u.toString();"
-        "}"
-        "</script>"
+    current_opt = RKEY_MAP.get(st.session_state["party_filter"], radio_opts[0])
+    selected = st.radio(
+        "filter", radio_opts,
+        index=radio_opts.index(current_opt),
+        horizontal=True,
+        label_visibility="collapsed",
+        key="party_radio"
     )
-    st.markdown(bar_html, unsafe_allow_html=True)
+    new_filter = KEY_MAP.get(selected, "All")
+    if new_filter != st.session_state["party_filter"]:
+        st.session_state["party_filter"] = new_filter
+        st.rerun()
+    active = st.session_state["party_filter"]
 
 
 
