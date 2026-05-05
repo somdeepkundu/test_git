@@ -500,7 +500,7 @@ def main():
                       legend_df=legend_df)
 
     st_folium(m, width="100%", height=620, returned_objects=[])
-    st.caption(f"Hover for quick info · Click/tap for details · this app is under development, so if there are data inconsistencies from developers side, that's my fault not ECIs.")
+    st.caption(f"Hover for quick info · Click/tap for details · This app is purely experimental and under development, so if there are data inconsistencies from developers side, that's my fault, not ECIs.")
 
     # ── Party-filtered results table ──────────────────────────────────────────
     show_df = df.copy()
