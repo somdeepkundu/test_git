@@ -388,10 +388,9 @@ def main():
         unsafe_allow_html=True
     )
 
-    # ── Party filter cards — styled buttons in a 2×2 grid ──────────────────
+    # ── Party filter pills ────────────────────────────────────────────────────
     seats       = df["Party"].value_counts()
     other_count = len(df) - seats.get("BJP", 0) - seats.get("AITC", 0)
-    active      = st.session_state["party_filter"]
 
     CARDS = [
         ("All",   "ALL SEATS", 294,                  "All constituencies",                 "#607D8B"),
@@ -412,80 +411,54 @@ def main():
         [data-testid="stButton"] button[kind="secondary"]:has(+ *),
         div[data-testid="column"] button {{}}
         """
-    # ── Pill bar: pure HTML/CSS, zero Streamlit columns, JS bridge to buttons ──
-    # Build the visible HTML pill bar
-    pill_html = """
-    <div style="
-        display:flex; gap:6px; flex-wrap:nowrap; overflow-x:auto;
-        background:linear-gradient(135deg,#1a1f3a 0%,#16213e 100%);
-        border-radius:12px 12px 0 0;
-        padding:10px 12px 8px 12px;
-        scrollbar-width:none;
-        -webkit-overflow-scrolling:touch;
-        margin-bottom:0;
-    ">
-    """
+    # ── Pill bar: HTML pills set query_params, no hidden buttons needed ─────────
+    # Read filter from query params (set by pill click via JS)
+    qp = st.query_params.get("pf", "All")
+    if qp in ("All","BJP","AITC","Others") and qp != st.session_state["party_filter"]:
+        st.session_state["party_filter"] = qp
+    active = st.session_state["party_filter"]
+
     PILL_STYLE = {
         "All":    {"bg":"#2e3557","col":"#aab4d4","bdr":"#3d4570","abg":"#607D8B","acol":"#fff","aglow":"#90A4AE"},
         "BJP":    {"bg":"#3d2800","col":"#FFB74D","bdr":"#FF9800","abg":"#FF9800","acol":"#1a1200","aglow":"#FFD54F"},
         "AITC":   {"bg":"#0a1e3d","col":"#64B5F6","bdr":"#1E88E5","abg":"#1E88E5","acol":"#fff","aglow":"#90CAF9"},
         "Others": {"bg":"#0d2b12","col":"#81C784","bdr":"#4CAF50","abg":"#4CAF50","acol":"#fff","aglow":"#A5D6A7"},
     }
+
+    pills = ""
     for key, label, value, pct, color in CARDS:
         s = PILL_STYLE[key]
         is_active = (active == key)
         bg  = s["abg"]  if is_active else s["bg"]
         col = s["acol"] if is_active else s["col"]
         bdr = s["aglow"] if is_active else s["bdr"]
-        shadow = f"0 0 0 2px {s['aglow']}" if is_active else "none"
+        shadow = f"0 0 0 3px {s['aglow']}" if is_active else "none"
         tick = "✓ " if is_active else ""
-        pill_html += (
-            f"<button id=\"pill-{key}\" onclick=\"triggerPill(\'{key}\')\" style=\"\n"
-            f"  background:{bg};color:{col};border:2px solid {bdr};\n"
-            f"  border-radius:999px;padding:5px 14px;font-size:12px;font-weight:700;\n"
-            f"  white-space:nowrap;cursor:pointer;transition:all .15s;box-shadow:{shadow};\n"
-            f"  height:34px;flex-shrink:0;font-family:inherit;letter-spacing:.3px;\n"
-            f"\">{tick}{label} {value}</button>\n"
+        pills += (
+            f"<button onclick=\"setPF(\'{key}\')\" style=\""
+            f"background:{bg};color:{col};border:2px solid {bdr};"
+            f"border-radius:999px;padding:6px 16px;font-size:12px;font-weight:700;"
+            f"white-space:nowrap;cursor:pointer;transition:all .15s;box-shadow:{shadow};"
+            f"height:36px;flex-shrink:0;font-family:inherit;letter-spacing:.3px;\">"
+            f"{tick}{label} {value}</button>"
         )
-    pill_html += "</div>"
 
-    # JS: find the hidden Streamlit button by label text and click it
-    pill_js = """
-    <script>
-    function triggerPill(key) {
-      var labels = {"All":"✓All 294","BJP":"BJP 206","AITC":"AITC 81","Others":"Others 7"};
-      var allBtns = window.parent.document.querySelectorAll('button');
-      var target = key;
-      for (var b of allBtns) {
-        var t = b.innerText.replace(/ +/g," ").trim();
-        if (t === target || t === '✓'+target || t.startsWith(target+' ') || t.startsWith('✓'+target)) {
-          b.click(); break;
-        }
-      }
-    }
-    </script>
-    """
+    bar_html = (
+        "<div style=\"display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;"
+        "background:linear-gradient(135deg,#1a1f3a 0%,#16213e 100%);"
+        "border-radius:12px 12px 0 0;padding:10px 14px 8px 14px;"
+        "scrollbar-width:none;-webkit-overflow-scrolling:touch;\">"
+        + pills + "</div>"
+        "<script>"
+        "function setPF(key){"
+        "  var u=new URL(window.location.href);"
+        "  u.searchParams.set('pf',key);"
+        "  window.location.href=u.toString();"
+        "}"
+        "</script>"
+    )
+    st.markdown(bar_html, unsafe_allow_html=True)
 
-    # Render the visible pill bar (no Streamlit columns!)
-    st.markdown(pill_html + pill_js, unsafe_allow_html=True)
-
-    # Hidden Streamlit buttons — zero-height, invisible, but functional
-    st.markdown("""
-    <style>
-    .hidden-pills { display:flex; gap:0; overflow:hidden; height:0; }
-    .hidden-pills [data-testid="stColumn"] { padding:0; margin:0; }
-    .hidden-pills button { opacity:0; height:0; padding:0; pointer-events:none; }
-    </style>
-    """, unsafe_allow_html=True)
-    st.markdown('<div class="hidden-pills">', unsafe_allow_html=True)
-    hcols = st.columns(4)
-    for col_obj, (key, label, value, pct, color) in zip(hcols, CARDS):
-        tick = "✓" if (active == key) else ""
-        btn_label = f"{tick}{label} {value}"
-        if col_obj.button(btn_label, key=f"btn_{key}", use_container_width=True):
-            st.session_state["party_filter"] = key
-            st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
     # ── Map ───────────────────────────────────────────────────────────────────
