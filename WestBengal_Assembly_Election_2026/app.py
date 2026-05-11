@@ -81,10 +81,19 @@ if "party_filter" not in st.session_state:
 @st.cache_data(show_spinner="Fetching data from GitHub...")
 def load_data():
     df = pd.read_csv(CSV_URL)
-    df["Margin"]       = pd.to_numeric(df["Margin"],     errors="coerce")
-    df["Const. No."]   = pd.to_numeric(df["Const. No."], errors="coerce")
+    df["Margin"]       = pd.to_numeric(df["Margin"],           errors="coerce")
+    df["Const. No."]   = pd.to_numeric(df["Const. No."],       errors="coerce")
+    df["Total_Electors"]        = pd.to_numeric(df.get("Total_Electors"),        errors="coerce")
+    df["Male_Electors"]         = pd.to_numeric(df.get("Male_Electors"),         errors="coerce")
+    df["Female_Electors"]       = pd.to_numeric(df.get("Female_Electors"),       errors="coerce")
+    df["Third_Gender_Electors"] = pd.to_numeric(df.get("Third_Gender_Electors"), errors="coerce")
+    df["Phase"]        = pd.to_numeric(df.get("Phase"),         errors="coerce")
     df["Constituency"] = df["Constituency"].str.strip()
     df["Party"]        = df["Leading Party"].map(PARTY_ABBREV).fillna("Other")
+    # Margin as % of registered electors
+    df["Margin_Pct"] = (df["Margin"] / df["Total_Electors"] * 100).round(2)
+    # Female-to-male ratio (women per 1000 men)
+    df["Female_Per1000Male"] = (df["Female_Electors"] / df["Male_Electors"] * 1000).round(0)
     def mcat(m):
         if pd.isna(m): return "Unknown"
         if m <  1000:  return "Extremely Close (<1K)"
@@ -225,9 +234,14 @@ def build_map(df, geojson, district_filter="All Districts",
                      if row is not None and pd.notna(row["Margin"]) else "N/A"
 
         if row is not None:
+            electors_str  = f"{int(row['Total_Electors']):,}"  if pd.notna(row.get("Total_Electors")) else "N/A"
+            margin_pct_str = f"{row['Margin_Pct']:.2f}%"       if pd.notna(row.get("Margin_Pct"))     else "N/A"
+            male_str      = f"{int(row['Male_Electors']):,}"   if pd.notna(row.get("Male_Electors"))   else "N/A"
+            female_str    = f"{int(row['Female_Electors']):,}" if pd.notna(row.get("Female_Electors")) else "N/A"
+            phase_str     = str(int(row["Phase"])) if pd.notna(row.get("Phase")) else "—"
             popup_html = (
                 "<div style=\"font-family:Arial,sans-serif;font-size:13px;"
-                "line-height:1.75;min-width:230px;max-width:290px\">"
+                "line-height:1.75;min-width:240px;max-width:300px\">"
                 "<div style=\"background:" + color + ";color:white;padding:7px 11px;"
                 "border-radius:6px 6px 0 0;font-weight:700;font-size:14px;"
                 "display:flex;justify-content:space-between;align-items:center\">"
@@ -238,11 +252,17 @@ def build_map(df, geojson, district_filter="All Districts",
                 "border-top:none;border-radius:0 0 6px 6px;background:#fff\">"
                 "<div style=\"margin-bottom:6px;color:#888;font-size:11px;font-weight:600;"
                 "letter-spacing:.4px;text-transform:uppercase\">AC No. "
-                + (str(int(row["Const. No."])) if pd.notna(row["Const. No."]) else "—") + "</div>"
+                + (str(int(row["Const. No."])) if pd.notna(row["Const. No."]) else "—")
+                + " &nbsp;·&nbsp; Phase " + phase_str + "</div>"
                 "<div style=\"margin-bottom:3px\"><b>Winner</b>: " + str(row["Leading Candidate"]).title() + "</div>"
                 "<div style=\"margin-bottom:3px\"><b>Runner-up</b>: " + str(row["Trailing Candidate"]).title() + "</div>"
-                "<div style=\"margin-bottom:3px\"><b>Margin</b>: " + margin_str + " votes</div>"
+                "<div style=\"margin-bottom:3px\"><b>Margin</b>: " + margin_str + " votes"
+                + (" <span style=\"color:#888;font-size:11px\">(" + margin_pct_str + " of electors)</span>" if margin_pct_str != "N/A" else "")
+                + "</div>"
                 "<div style=\"margin-bottom:3px\"><b>Category</b>: " + str(row["Margin_Cat"]) + "</div>"
+                "<div style=\"margin-bottom:3px\"><b>Registered Electors</b>: " + electors_str + "</div>"
+                "<div style=\"margin-bottom:3px;font-size:11px;color:#555\">"
+                "&#9794; " + male_str + " &nbsp;&#9792; " + female_str + "</div>"
                 "<div style=\"margin-bottom:3px\"><b>District</b>: " + dist + "</div>"
                 "<div><b>Status</b>: <span style=\"background:#e8f5e9;color:#2e7d32;"
                 "padding:1px 6px;border-radius:3px;font-size:11px;font-weight:600\">"
@@ -528,8 +548,12 @@ def main():
     elif pf != "All":
         show_df = show_df[show_df["Party"] == pf]
 
+    show_df_full = show_df.copy()
+
     show_df = show_df[["Constituency","Party","Leading Candidate",
-                        "Trailing Candidate","Margin","Margin_Cat","District","Status"]]\
+                        "Trailing Candidate","Margin","Margin_Pct","Margin_Cat",
+                        "Total_Electors","District","Status"]]\
+              .rename(columns={"Margin_Pct": "Margin_%"})\
               .sort_values("Margin", ascending=False)\
               .reset_index(drop=True)
 
@@ -544,6 +568,65 @@ def main():
         expanded=(pf != "All" or dist_choice != "All Districts")
     ):
         st.dataframe(show_df, use_container_width=True, hide_index=True)
+
+    # ── Electorate Analysis ───────────────────────────────────────────────────
+    st.markdown("## Electorate Analysis")
+
+    elector_scope = show_df_full.copy()
+    has_elector = elector_scope["Total_Electors"].notna().any()
+
+    if not has_elector:
+        st.info("Elector data not available in the loaded CSV.")
+    else:
+        col1, col2, col3, col4 = st.columns(4)
+        total_electors = int(elector_scope["Total_Electors"].sum())
+        total_male     = int(elector_scope["Male_Electors"].sum())
+        total_female   = int(elector_scope["Female_Electors"].sum())
+        total_third    = int(elector_scope["Third_Gender_Electors"].sum())
+        sex_ratio      = round(total_female / total_male * 1000) if total_male else 0
+
+        col1.metric("Total Registered Electors", f"{total_electors:,}")
+        col2.metric("Male Electors",   f"{total_male:,}",   f"{total_male/total_electors*100:.1f}%")
+        col3.metric("Female Electors", f"{total_female:,}", f"{total_female/total_electors*100:.1f}%")
+        col4.metric("Sex Ratio (F per 1K M)", str(sex_ratio))
+
+        # ── Phase breakdown ────────────────────────────────────────────────────
+        if "Phase" in elector_scope.columns and elector_scope["Phase"].notna().any():
+            st.markdown("### Phase-wise Elector Split")
+            phase_grp = elector_scope.groupby("Phase")[
+                ["Total_Electors","Male_Electors","Female_Electors"]
+            ].sum().astype(int).reset_index()
+            phase_grp.columns = ["Phase","Total","Male","Female"]
+            phase_grp["Female %"] = (phase_grp["Female"] / phase_grp["Total"] * 100).round(1)
+            st.dataframe(phase_grp, use_container_width=True, hide_index=True)
+
+        st.markdown("### Margin as % of Registered Electors")
+        tab1, tab2 = st.tabs(["Smallest Mandate (closest contests)", "Largest Mandate (biggest wins)"])
+
+        with tab1:
+            narrowest = elector_scope.nsmallest(15, "Margin_Pct")[
+                ["Constituency","Party","Margin","Margin_Pct","Total_Electors","District"]
+            ].rename(columns={"Margin_Pct":"Margin_%"}).reset_index(drop=True)
+            st.dataframe(narrowest, use_container_width=True, hide_index=True)
+
+        with tab2:
+            widest = elector_scope.nlargest(15, "Margin_Pct")[
+                ["Constituency","Party","Margin","Margin_Pct","Total_Electors","District"]
+            ].rename(columns={"Margin_Pct":"Margin_%"}).reset_index(drop=True)
+            st.dataframe(widest, use_container_width=True, hide_index=True)
+
+        # ── District-level elector summary ────────────────────────────────────
+        st.markdown("### District-wise Elector Summary")
+        dist_grp = elector_scope.groupby("District").agg(
+            Constituencies=("Constituency","count"),
+            Total_Electors=("Total_Electors","sum"),
+            Male_Electors=("Male_Electors","sum"),
+            Female_Electors=("Female_Electors","sum"),
+        ).reset_index()
+        dist_grp["Female_%"] = (dist_grp["Female_Electors"] / dist_grp["Total_Electors"] * 100).round(1)
+        dist_grp["Sex_Ratio"] = (dist_grp["Female_Electors"] / dist_grp["Male_Electors"] * 1000).round(0).astype(int)
+        dist_grp = dist_grp.sort_values("Total_Electors", ascending=False).reset_index(drop=True)
+        st.dataframe(dist_grp, use_container_width=True, hide_index=True)
 
 if __name__ == "__main__":
     main()
